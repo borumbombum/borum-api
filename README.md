@@ -3,6 +3,10 @@
 Single Go binary: PocketBase backend + chi custom API router.
 Custom routes are declared in `main.go` (apiRoutes table).
 
+## Ports
+- 8090 — PocketBase only: REST API `/api/*`, admin UI `/_/` (private)
+- 8091 — custom chi API (the only thing you expose)
+
 ## Build & run on Termux
     pkg install golang git tmux
     git clone https://github.com/borumbombum/borum-api.git
@@ -10,15 +14,17 @@ Custom routes are declared in `main.go` (apiRoutes table).
     CGO_ENABLED=0 go build -o borum-api .
     ./borum-api serve
 
-Binds 127.0.0.1:8090 by default. For browser access from other
-devices: ./borum-api serve --http 0.0.0.0:8090
+Binds 8090 (PocketBase) and 8091 (API) on 127.0.0.1 by default.
+For browser access from other devices, bind both to all
+interfaces: ./borum-api serve --http 0.0.0.0:8090 (API port is
+configured in main.go, const apiPort).
 
 Keep it alive with tmux (pkg install tmux).
 
 ## Access
-- LAN: http://<phone-lan-ip>:8090
-- Tailscale: http://<phone-tailscale-hostname>:8090
-- Admin UI: http://<address>/_/
+- Custom API (8091): http://<host>:8091
+- Admin UI (8090): http://<address>/_/
+- REST API (8090): http://<address>/api/
 
 ## First superuser
     ./borum-api superuser upsert admin@example.com yourpassword
@@ -34,3 +40,21 @@ consistent), then sync the whole folder:
 
     pkill -x borum-api
     rsync -avz -e "ssh -p 8022" pb_data/ <phone-username>@<phone-tailscale-ip>:~/borum-api/pb_data/
+
+## Expose to the internet (Cloudflare Tunnel)
+Only the custom API (8091) is exposed; PocketBase and the DB stay
+private on 8090.
+
+Install: pkg install cloudflared tmux
+
+**Quick (ephemeral, no account):**
+    cloudflared tunnel --url http://127.0.0.1:8091
+→ random https://xxx.trycloudflare.com. New URL each restart, no SLA.
+
+**Named (persistent, needs a Cloudflare-managed domain):**
+1. Dashboard → Zero Trust → Networks → Tunnels → Create → copy token
+2. Add hostname (e.g. api.yourdomain.com) → http://127.0.0.1:8091
+3. cloudflared tunnel run --token <TOKEN>
+
+Keep the server + tunnel alive with tmux (Ctrl-B C new window,
+Ctrl-B D detach).

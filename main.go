@@ -12,7 +12,12 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
-const apiVersion = "v1"
+const (
+	apiVersion = "v1"
+	apiPort    = "8091"
+)
+
+var pocketbaseApp *pocketbase.PocketBase
 
 type apiRoute struct {
 	method  string
@@ -20,11 +25,19 @@ type apiRoute struct {
 	handler http.HandlerFunc
 }
 
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	_, err := pocketbaseApp.CountRecords("_superusers")
+	if err != nil {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		w.Write([]byte(`{"status":"degraded","service":"borum-api","database":"unreachable"}`))
+		return
+	}
+	w.Write([]byte(`{"status":"ok","service":"borum-api","database":"ok"}`))
+}
+
 var apiRoutes = []apiRoute{
-	{http.MethodGet, "/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"status":"ok","service":"borum-api"}`))
-	}},
+	{http.MethodGet, "/", healthHandler},
 	{http.MethodGet, "/cms", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"endpoint":"cms"}`))
@@ -32,8 +45,21 @@ var apiRoutes = []apiRoute{
 }
 
 func main() {
-	app := pocketbase.New()
+	pocketbaseApp = pocketbase.New()
 
+	go startAPIServer()
+
+	pocketbaseApp.OnServe().BindFunc(func(se *core.ServeEvent) error {
+		go printRoutes()
+		return se.Next()
+	})
+
+	if err := pocketbaseApp.Start(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func startAPIServer() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
@@ -52,23 +78,14 @@ func main() {
 		w.Write([]byte(`{"status":"not_found"}`))
 	})
 
-	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
-		se.Router.Any("/{path...}", func(e *core.RequestEvent) error {
-			r.ServeHTTP(e.Response, e.Request)
-			return nil
-		})
-		go printRoutes(se.Server.Addr)
-		return se.Next()
-	})
-
-	if err := app.Start(); err != nil {
+	if err := http.ListenAndServe("127.0.0.1:"+apiPort, r); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func printRoutes(addr string) {
+func printRoutes() {
 	time.Sleep(50 * time.Millisecond)
-	baseURL := "http://" + addr
+	baseURL := "http://127.0.0.1:" + apiPort
 	fmt.Println("Borum API:")
 	for i, rt := range apiRoutes {
 		path := rt.path
