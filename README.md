@@ -58,3 +58,18 @@ Install: pkg install cloudflared tmux
 
 Keep the server + tunnel alive with tmux (Ctrl-B C new window,
 Ctrl-B D detach).
+
+## Keep Termux from sleeping (Android)
+
+If your Termux CPU sleeps/suspends and the API stops, hold a Termux wake lock while the
+server is running.
+
+In one Termux session:
+    termux-wake-lock
+
+Leave that terminal running, then start your server in a second Termux session:
+    ./borum-api serve
+
+When you’re done:
+    termux-wake-unlock
+
