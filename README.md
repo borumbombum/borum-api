@@ -65,11 +65,6 @@ If your Termux CPU sleeps/suspends and the API stops, hold a Termux wake lock wh
 server is running.
 
 In one Termux session:
-    termux-wake-lock
-
-Leave that terminal running, then start your server in a second Termux session:
-    ./borum-api serve
-
-When you’re done:
-    termux-wake-unlock
-
+```sh
+termux-wake-lock
+```
