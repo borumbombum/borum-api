@@ -45,11 +45,18 @@ func (api *APIServer) healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"status":"ok","service":"borum-api","database":"ok"}`))
 }
 
+// webHandler for maybe some admin web stuff in the future
+func (api *APIServer) webHandler(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write([]byte(`<body><h1>This is an html response for the unprotected, you read well "unprotected" admin section</h1></body>`))
+}
+
 // apiRoutes is the single source of truth for the custom API.
 // Both route registration and the startup banner are generated from it.
 func (api *APIServer) apiRoutes() []apiRoute {
 	return []apiRoute{
 		{http.MethodGet, "/", api.healthHandler},
+		{http.MethodGet, "/web/admin", api.webHandler},
 		{http.MethodGet, "/cms", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.Write([]byte(`{"endpoint":"cms"}`))

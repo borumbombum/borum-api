@@ -1,4 +1,4 @@
-module borum-api
+module github.com/borumbombum/borum-api
 
 go 1.26.5
 
