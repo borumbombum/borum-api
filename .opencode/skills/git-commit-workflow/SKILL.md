@@ -12,7 +12,7 @@ description: Rules for committing, bumping versions, and pushing to git. Use whe
 5. Before committing, show staged files + a short diff summary.
 6. Commit and bump are independent — a commit order never implies a bump, and a bump order never implies a commit. Only bump when explicitly told to ("bump", "bump version", "release"), or if the repo's own convention is to bump on every commit (check first, don't assume). Bump BEFORE committing, never after. Always bump **patch** unless explicitly told to bump minor or major.
     - Node/Tauri: `package.json` (and `src-tauri/tauri.conf.json` if present, keeping both numbers equal).
-    - Go: a version string, usually one of — a `VERSION` file, a `const Version = "x.y.z"` (e.g. in `version.go` or `main.go`), or a git tag (`git tag vX.Y.Z`) if the app has no in-code version. Check which one the repo actually uses before bumping; don't add a new mechanism.
+    - Go: a version string, usually one of — a `VERSION` file, a `const Version = "x.y.z"` (e.g. in `version.go` or `main.go`). Check which one the repo actually uses before bumping; don't add a new mechanism.
 7. Never commit secrets (.env, keys, tokens).
 8. Confirm before destructive commands: force push, `reset --hard`, `checkout --` (discards changes), `clean -fd`, branch deletion.
 9. Prior bumps/commits/pushes earlier in the conversation are not standing permission — each one needs its own explicit ask.
