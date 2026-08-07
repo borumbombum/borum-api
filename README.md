@@ -1,7 +1,17 @@
 # borum-api
 
 Single Go binary: PocketBase backend + chi custom API router.
-Custom routes are declared in `main.go` (apiRoutes table).
+Custom routes are declared in `cmd/api/routes.go` (apiRoutes table).
+
+## Code layout
+
+cmd/api/main.go   entry point: PocketBase wiring, OnServe/OnTerminate hooks, graceful shutdown
+cmd/api/routes.go route table (apiRoutes) + chi router — single source of truth for endpoints
+cmd/api/handlers.go HTTP handlers as methods on *app (injected PocketBase instance)
+cmd/api/server.go  HTTP server lifecycle (sync.Once) + startup banner
+internal/tasks/tasks.go  scheduled jobs via pb.Cron() (empty until the first task is added)
+
+Startup flow: pb.Start() → OnServe → startAPIServer() (HTTP listener + tasks.Register) → banner.
 
 ## Ports
 - 8090 — PocketBase only: REST API `/api/*`, admin UI `/_/` (private)
@@ -11,13 +21,13 @@ Custom routes are declared in `main.go` (apiRoutes table).
     pkg install golang git tmux
     git clone https://github.com/borumbombum/borum-api.git
     cd borum-api
-    CGO_ENABLED=0 go build -o borum-api .
+    CGO_ENABLED=0 go build -o borum-api ./cmd/api
     ./borum-api serve
 
 Binds 8090 (PocketBase) and 8091 (API) on 127.0.0.1 by default.
 For browser access from other devices, bind both to all
 interfaces: ./borum-api serve --http 0.0.0.0:8090 (API port is
-configured in main.go, const apiPort).
+configured in cmd/api/main.go, const apiPort).
 
 Keep it alive with tmux (pkg install tmux).
 
