@@ -4,7 +4,7 @@
 # Manually: pkill -x borum-api; pkill -x cloudflared
 set -euo pipefail
 
-CGO_ENABLED=0 go build -o borum-api .
+CGO_ENABLED=0 go build -o borum-api ./cmd/api
 ./borum-api serve &
 SERVER_PID=$!
 trap 'kill $SERVER_PID 2>/dev/null' EXIT
