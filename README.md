@@ -1,8 +1,14 @@
 # borum-api
 
-Single Go binary: a custom chi HTTP API. The data layer (Turso) is wired in
-separately; right now the API runs with no database.
+Single Go binary: a custom chi HTTP API. The data layer (Turso/libsql) is wired in
+and configured via environment variables (see `.env.example`).
 Custom routes are declared in `cmd/api/routes.go` (apiRoutes table).
+
+## Setup
+
+    cp .env.example .env
+
+Then fill in `TURSO_URL` and `TURSO_TOKEN` with your Turso database values.
 
 ## Code layout
 
