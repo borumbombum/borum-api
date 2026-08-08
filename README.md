@@ -1,20 +1,18 @@
 # borum-api
 
-Single Go binary: PocketBase backend + chi custom API router.
+Single Go binary: a custom chi HTTP API. The data layer (Turso) is wired in
+separately; right now the API runs with no database.
 Custom routes are declared in `cmd/api/routes.go` (apiRoutes table).
 
 ## Code layout
 
-cmd/api/main.go   entry point: PocketBase wiring, OnServe/OnTerminate hooks, graceful shutdown
+cmd/api/main.go   entry point: HTTP server bootstrap, graceful shutdown on SIGINT/SIGTERM
 cmd/api/routes.go route table (apiRoutes) + chi router — single source of truth for endpoints
-cmd/api/handlers.go HTTP handlers as methods on *app (injected PocketBase instance)
-cmd/api/server.go  HTTP server lifecycle (sync.Once) + startup banner
-internal/tasks/tasks.go  scheduled jobs via pb.Cron() (empty until the first task is added)
+cmd/api/handlers.go HTTP handlers as methods on *app (injected dependencies)
+cmd/api/server.go  startup banner
+internal/tasks/    minimal in-process scheduler for background jobs
 
-Startup flow: pb.Start() → OnServe → startAPIServer() (HTTP listener + tasks.Register) → banner.
-
-## Ports
-- 8090 — PocketBase only: REST API `/api/*`, admin UI `/_/` (private)
+## Port
 - 8091 — custom chi API (the only thing you expose)
 
 ## Build & run on Termux
@@ -22,38 +20,17 @@ Startup flow: pb.Start() → OnServe → startAPIServer() (HTTP listener + tasks
     git clone https://github.com/borumbombum/borum-api.git
     cd borum-api
     CGO_ENABLED=0 go build -o borum-api ./cmd/api
-    ./borum-api serve
+    ./borum-api
 
-Binds 8090 (PocketBase) and 8091 (API) on 127.0.0.1 by default.
-For browser access from other devices, bind both to all
-interfaces: ./borum-api serve --http 0.0.0.0:8090 (API port is
-configured in cmd/api/main.go, const apiPort).
+Binds 127.0.0.1:8091 (API port is configured in cmd/api/main.go, const apiPort).
 
 Keep it alive with tmux (pkg install tmux).
 
 ## Access
 - Custom API (8091): http://<host>:8091
-- Admin UI (8090): http://<address>/_/
-- REST API (8090): http://<address>/api/
-
-## First superuser
-    ./borum-api superuser upsert admin@example.com yourpassword
-
-## Sync the database (over Tailscale)
-On the phone (one-time):
-    pkg install openssh rsync
-    sshd              # SSH server on port 8022
-    whoami            # note the username, e.g. u0_a123
-
-On the source machine — stop the server if running (so data.db is
-consistent), then sync the whole folder:
-
-    pkill -x borum-api
-    rsync -avz -e "ssh -p 8022" pb_data/ <phone-username>@<phone-tailscale-ip>:~/borum-api/pb_data/
 
 ## Expose to the internet (Cloudflare Tunnel)
-Only the custom API (8091) is exposed; PocketBase and the DB stay
-private on 8090.
+Only the custom API (8091) is exposed.
 
 Install: pkg install cloudflared tmux
 

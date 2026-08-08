@@ -1,62 +1,101 @@
-// Command borum-api runs the PocketBase backend (default :8090) plus a custom
-// chi HTTP API on :8091. The custom API is the only surface exposed to the
-// public; PocketBase stays private and is used as the data layer.
+// Command borum-api runs a standalone chi HTTP API on 127.0.0.1:8091.
+// No PocketBase: the data layer (Turso) is wired in separately.
 package main
 
 import (
 	"context"
+	"database/sql"
 	"log"
+	"net"
 	"net/http"
-	"sync"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
-	"github.com/pocketbase/pocketbase"
-	"github.com/pocketbase/pocketbase/core"
+	"github.com/borumbombum/borum-api/internal/tasks"
+	"github.com/joho/godotenv"
+
+	// _ "turso.tech/database/tursogo"
+	turso "turso.tech/database/tursogo-serverless"
 )
 
 const (
 	// apiVersion prefixes all custom API routes except the root health check.
 	apiVersion = "v1"
-	// apiPort is the custom chi API port. PocketBase's own port (:8090) is
-	// configured at runtime via the serve --http flag, not here.
+	// apiPort is the only port the API listens on.
 	apiPort = "8091"
 )
 
-// app holds our dependencies and server state,
-// removing the need for a global pocketbaseApp variable.
+// app holds our dependencies and server state.
 type app struct {
-	pb    *pocketbase.PocketBase
-	srv   *http.Server
-	start sync.Once
+	srv *http.Server
+	db  *sql.DB
 }
 
-// main wires PocketBase to the custom API: it builds the app dependency
-// holder, then hooks the server startup and scheduled tasks to OnServe
-// (fired after the DB is initialized) and graceful shutdown to OnTerminate.
 func main() {
-	pb := pocketbase.New()
+	a := &app{}
+	routes := a.apiRoutes()
 
-	api := &app{pb: pb}
-
-	// Triggered after DB initializes, safe to start custom API.
-	pb.OnServe().BindFunc(func(se *core.ServeEvent) error {
-		api.startAPIServer()
-		return se.Next()
-	})
-
-	// Graceful shutdown with a 5-second context timeout.
-	pb.OnTerminate().BindFunc(func(te *core.TerminateEvent) error {
-		if api.srv != nil {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			if err := api.srv.Shutdown(ctx); err != nil {
-				log.Printf("Borum API shutdown error: %v", err)
-			}
-		}
-		return te.Next()
-	})
-
-	if err := pb.Start(); err != nil {
-		log.Fatal(err)
+	// Bind the listener before announcing anything, so a port conflict is a
+	// fatal error instead of a process that is alive but serving nothing.
+	addr := "127.0.0.1:" + apiPort
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		log.Fatalf("failed to listen on %s: %v", addr, err)
 	}
+
+	// Turso stuff
+	err = godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading Turso variables")
+	}
+	// log.Printf("TURSO_TOKEN %v", os.Getenv("TURSO_TOKEN"))
+	db := sql.OpenDB(turso.NewConnector(os.Getenv("TURSO_URL"), os.Getenv("TURSO_TOKEN")))
+	a.db = db
+	defer db.Close()
+
+	// start the server
+	a.srv = &http.Server{
+		Handler:      router(routes),
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  15 * time.Second,
+	}
+
+	// Start the scheduler. A zero-job scheduler is suspicious (the heartbeat is
+	// auto-registered), so surface it with a warning instead of failing hard.
+	if n := tasks.Register(); n == 0 {
+		log.Println("borum-api: warning: scheduler started with 0 jobs")
+	} else {
+		log.Printf("borum-api: scheduler started with %d job(s)", n)
+	}
+
+	// The listener is bound: print the banner and start serving.
+	printRoutes(routes)
+
+	go func() {
+		if err := a.srv.Serve(ln); err != nil && err != http.ErrServerClosed {
+			log.Printf("API server error: %v", err)
+		}
+	}()
+
+	// Wait for SIGINT/SIGTERM, then shut down gracefully with a 5s timeout.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	<-ctx.Done()
+
+	log.Println("Closing Turso connection...")
+	if err := db.Close(); err != nil {
+		log.Printf("error closing Turso: %v", err)
+	} else {
+		log.Printf("Turso connection closed successfully")
+	}
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := a.srv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("Borum API shutdown error: %v", err)
+	}
+	log.Println("Borum API stopped")
 }
