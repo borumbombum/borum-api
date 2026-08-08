@@ -1,6 +1,6 @@
-# PocketBase generated SQLite files
-pb_data/
-pb_migrations/
-
-# Compiled binary (repo root only)
+# Compiled binaries (repo root only)
 /borum-api
+/api
+
+# Local secrets
+/.env

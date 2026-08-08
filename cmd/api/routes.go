@@ -1,6 +1,7 @@
-// Router setup: apiRoutes is the single source of truth for the custom API,
-// and routes() builds the chi router from it. New endpoints are added to the
-// table in apiRoutes, which also feeds the startup banner in server.go.
+// Router setup: apiRoutes is the single source of truth for the custom API.
+// router() builds the chi router from it and printRoutes (server.go) feeds the
+// startup banner from the same slice. apiVersion is applied in exactly one
+// place, routePath().
 package main
 
 import (
@@ -11,7 +12,7 @@ import (
 )
 
 // apiRoute declares one endpoint: the HTTP method, the path (prefixed with
-// apiVersion by routes(), except for "/"), and the handler to call.
+// apiVersion by routePath(), except for "/"), and the handler to call.
 type apiRoute struct {
 	method  string
 	path    string
@@ -28,18 +29,24 @@ func (a *app) apiRoutes() []apiRoute {
 	}
 }
 
-// routes sets up the chi router and endpoints.
-func (a *app) routes() http.Handler {
+// routePath prefixes a route path with the API version, except for the root
+// "/" route which is served unprefixed. This is the only place apiVersion is
+// applied; both the router and the startup banner use it.
+func routePath(path string) string {
+	if path == "/" {
+		return "/"
+	}
+	return "/" + apiVersion + path
+}
+
+// router builds the chi router from the provided route table.
+func router(routes []apiRoute) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	for _, rt := range a.apiRoutes() {
-		path := rt.path
-		if path != "/" {
-			path = "/" + apiVersion + path
-		}
-		r.Method(rt.method, path, rt.handler)
+	for _, rt := range routes {
+		r.Method(rt.method, routePath(rt.path), rt.handler)
 	}
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
