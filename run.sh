@@ -17,7 +17,7 @@ trap 'kill $SERVER_PID 2>/dev/null; pkill -x cloudflared 2>/dev/null' EXIT
 
 sleep 1
 for i in $(seq 1 30); do
-  if curl -fsS "$BASE/" >/dev/null 2>&1; then
+  if curl -fsS "$BASE/cms" >/dev/null 2>&1; then
     echo "borum-api ready on $BASE"
     break
   fi

@@ -25,7 +25,7 @@ func (a *app) healthHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
-		fmt.Fprintf(w, `{"status": "error", "error": "db-unreachable", "latancy": %d}`, latency.Milliseconds())
+		fmt.Fprintf(w, `{"status": "error", "error": "db-unreachable", "detail": %q, "latancy": %d}`, err.Error(), latency.Milliseconds())
 		return
 	}
 
