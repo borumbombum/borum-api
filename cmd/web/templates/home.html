@@ -1,0 +1,77 @@
+{{define "title"}}Diary of a Bootstrapper{{end}}
+{{define "meta"}}<meta name="description" content="Notes from the trenches — building a startup, a life, and a couple of self-hosted APIs on the way." />{{end}}
+{{define "content"}}
+<div class="bg-grey pb-2">
+    <div class="wrapper pt-1">
+        {{template "header" .}}
+    </div>
+    <div class="wrapper wrapper-wide text-center pb-2">
+        <main>
+            <h1 class="article-hero">Archive</h1>
+            <h2 class="article-description">Diary of a Bootstrapper</h2>
+        </main>
+    </div>
+</div>
+
+<!-- Image -->
+{{if .Featured}}
+<div class="wrapper wrapper-wide mt-2 -top-16 relative">
+    <a href="/blog/{{.Featured.Slug}}">
+        <figure>
+            <img class="img-rounded img-rotate" src="{{.Featured.Image}}" alt="{{.Featured.Title}}" />
+            <figcaption><strong>{{.Featured.Title}}</strong></figcaption>
+        </figure>
+    </a>
+</div>
+{{end}}
+
+<!-- Separator -->
+<div class="flex justify-center -top-5 relative">
+    <div class="separator-line"></div>
+</div>
+
+<!-- Article list -->
+<div id="main" class="archive wrapper wrapper-wide mt-2 relative -top-5">
+    <h2 class="h4 font-italic font-weight-600">2026.</h2>
+    <ul class="archive-with-dates">
+        {{range .Articles}}
+        <li class="relative">
+            {{if .Star}}<span class="star absolute"></span>{{end}}
+            <div>
+                <a href="/blog/{{.Slug}}" style="font-weight: 200;">{{.Title}}</a>
+                <span class="archive-inline-date opacity-50">{{shortDate .Date}}</span>
+            </div>
+            <div class="opacity-50">{{shortDate .Date}}</div>
+        </li>
+        {{end}}
+    </ul>
+
+    <div class="text-center line-height-2 mt-3">
+        <h2 class="h4 font-italic font-weight-600">Tag cloud</h2>
+        {{range .Tags}}
+        <a title="Link to tag {{.}}" href="/tags/{{.}}"><span class="pill">{{.}}</span></a>
+        {{end}}
+    </div>
+
+    <section class="principles-section mt-3" aria-labelledby="principles-heading">
+        <div class="text-center line-height-2">
+            <h2 id="principles-heading" class="h4 font-italic font-weight-600">Principles</h2>
+            <p class="article-description opacity-50">Gratitude. Humility. Adventure. Love. Compassion. Generosity.</p>
+            <p class="article-date">scroll with arrows · enter to open</p>
+        </div>
+        <div class="principle-scroll mt-2" id="principle-scroll">
+            {{range $i, $p := .Principles}}
+            <div class="principle-item">
+                <button type="button" class="principle-row{{if eq $i 0}} selected{{end}}" data-principle-row="{{$p.N}}" aria-expanded="false" aria-controls="principle-{{printf "%02d" $p.N}}">
+                    <span class="principle-num">{{printf "%02d" $p.N}}</span>
+                    <span class="principle-title">{{$p.Title}}</span>
+                </button>
+                <div id="principle-{{printf "%02d" $p.N}}" class="principle-detail prose-diary" data-principle-detail="{{$p.N}}" hidden>
+                    {{safe $p.Body}}
+                </div>
+            </div>
+            {{end}}
+        </div>
+    </section>
+</div>
+{{end}}

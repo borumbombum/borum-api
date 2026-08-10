@@ -1,0 +1,28 @@
+{{define "base"}}<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,600;1,400;1,600&display=swap"
+			rel="stylesheet"
+		/>
+		<link rel="stylesheet" href="/styles.css" />
+		<title>{{template "title" .}}</title>
+		{{template "meta" .}}
+	</head>
+	<body>
+		<script>
+			(function(){var t=localStorage.getItem('theme');if(t==='light'){document.body.classList.add('theme-light');}else{document.body.classList.add('theme-dark');}})();
+		</script>
+		<a href="#main" class="skip-to-main-content">Skip to main content</a>
+{{template "content" .}}
+		<div id="command-palette-root"></div>
+{{template "footer" .}}
+		<script src="/vendor/lucide/lucide.min.js"></script>
+		<script src="/app.js"></script>
+	</body>
+</html>{{end}}

@@ -1,0 +1,56 @@
+{{define "title"}}{{.Article.Title}} — DOaGS{{end}}
+{{define "meta"}}<meta name="description" content="{{.Article.Excerpt}}" />{{end}}
+{{define "content"}}
+<div class="wrapper pt-1">
+    {{template "header" .}}
+</div>
+
+<div class="wrapper wrapper-wide text-center pb-2">
+    <main id="main">
+        <header class="rise-in text-center">
+            <h1 class="article-hero">{{.Article.Title}}</h1>
+            <h2 class="article-description">{{.Article.Subtitle}}</h2>
+            <p class="article-date">{{longDate .Article.Date}} - 1 min read</p>
+
+            <div class="mt-4 flex items-center justify-between">
+                <a href="/">&larr; index</a>
+                <button data-love data-slug="{{.Article.Slug}}" data-base="{{.Article.InitialLove}}" type="button" aria-pressed="false" class="heart-btn cursor-pointer inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono tracking-wide transition-colors border-hairline-strong hover:border-[#dc3545]/50 text-[12px]">
+	<i data-lucide="heart" width="16" height="16" stroke-width="2" class="text-ink-soft"></i>
+	<span data-count class="text-ink-soft">{{.Article.InitialLove}}</span>
+</button>
+            </div>
+        </header>
+    </main>
+
+    {{if .Article.Image}}
+    <figure class="pt-2">
+        <img src="{{.Article.Image}}" alt="{{.Article.ImageCaption}}" class="img-rounded img-rotate" />
+        <figcaption>{{.Article.ImageCaption}}</figcaption>
+    </figure>
+    {{end}}
+</div>
+
+<article class="article">
+    <div class="wrapper ismarkdown">
+        <div class="prose-diary" role="presentation" data-article-body data-article-slug="{{.Article.Slug}}">
+            {{safe .Article.Body}}
+        </div>
+    </div>
+
+    <section class="mt-14 border-t border-hairline pt-6" data-your-highlights hidden>
+        <p class="font-mono text-[11px] tracking-[0.12em] text-faint uppercase">
+            Your highlights (<span data-highlights-count>0</span>)
+        </p>
+        <ul class="mt-4 space-y-4" data-highlights-list></ul>
+    </section>
+</article>
+
+<div class="tags wrapper mt-2">
+    {{range .Article.Tags}}
+    <a href="/tags/{{.}}"><span class="pill">{{.}}</span></a>
+    {{end}}
+    <p class="mt-1">
+        <a href="/">&larr; Back to archive</a>
+    </p>
+</div>
+{{end}}

@@ -1,0 +1,24 @@
+{{define "title"}}#{{.Tag}} — DOaGS{{end}}
+{{define "meta"}}{{end}}
+{{define "content"}}
+<div class="wrapper mt-2">
+    <a href="/" class="no-decoration">
+        &larr; index
+    </a>
+
+    <h1 class="archive-heading" style="font-size: var(--fs-clamped-800);">#{{.Tag}}</h1>
+
+    <ul class="archive-with-dates mt-10">
+        {{range .Articles}}
+        <li class="relative">
+            {{if .Star}}<span class="star absolute"></span>{{end}}
+            <div>
+                <a href="/blog/{{.Slug}}" style="font-weight: 200;">{{.Title}}</a>
+                <span class="archive-inline-date opacity-50">{{shortDate .Date}}</span>
+            </div>
+            <div class="opacity-50">{{shortDate .Date}}</div>
+        </li>
+        {{end}}
+    </ul>
+</div>
+{{end}}
