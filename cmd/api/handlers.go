@@ -55,4 +55,10 @@ func (a *app) webHandler(w http.ResponseWriter, r *http.Request) {
 		batteryText = fmt.Sprintf("%d%%", batteryData.Percentage)
 	}
 	fmt.Fprintf(w, "Battery: %s", batteryText)
+	fmt.Fprint(w, "<h1>Blogroll</h1>")
+	fmt.Fprint(w, "<ul>")
+	fmt.Fprint(w, "<li><a href='https://solar.lowtechmagazine.com/'>Low-Tech Magazine</a> - <a href='https://solar.lowtechmagazine.com/posts/index.xml'>RSS</a></li>")
+	fmt.Fprint(w, "<li><a href='https://ranprieur.com/'>Ran Prieur</a> - <a href='https://ranprieur.com/feed.php'>RSS</a></li>")
+	fmt.Fprint(w, "<li><a href='https://www.fromjason.xyz/'>From Jason</a> - <a href='https://www.fromjason.xyz/feed/feed.xml'>RSS</a></li>")
+	fmt.Fprint(w, "</ul>")
 }
