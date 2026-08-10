@@ -1,4 +1,5 @@
 # Compiled binaries (repo root only)
+**/.DS_Store
 /borum-api
 /api
 

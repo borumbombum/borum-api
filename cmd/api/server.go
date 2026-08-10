@@ -4,15 +4,14 @@ package main
 
 import "fmt"
 
-func printRoutes(routes []apiRoute) {
-	baseURL := "http://127.0.0.1:" + apiPort
-	fmt.Println("Borum API:")
+func printRoutes(routes []apiRoute, addr string) {
+	fmt.Printf("Borum API listening on %s\n", addr)
 	for i, rt := range routes {
-		path := routePath(rt.path)
+		path := rt.path
 		branch := "├─"
 		if i == len(routes)-1 {
 			branch = "└─"
 		}
-		fmt.Printf("%s %s %s  %s%s\n", branch, rt.method, path, baseURL, path)
+		fmt.Printf("%s %s %s\n", branch, rt.method, path)
 	}
 }

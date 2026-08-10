@@ -19,7 +19,17 @@ cmd/api/server.go  startup banner
 internal/tasks/    minimal in-process scheduler for background jobs
 
 ## Port
-- 8091 — custom chi API (the only thing you expose)
+The API listens on `127.0.0.1:8091` by default. Configure it with flags on the
+binary:
+```
+./borum-api -port=8092
+./borum-api -address=0.0.0.0 -port=8092
+```
+or with env vars when using `run.sh`:
+```
+PORT=8092 ./run.sh
+ADDRESS=0.0.0.0 PORT=8092 ./run.sh
+```
 
 ## Build & run on Termux
     pkg install golang git tmux
@@ -28,7 +38,8 @@ internal/tasks/    minimal in-process scheduler for background jobs
     CGO_ENABLED=0 go build -o borum-api ./cmd/api
     ./borum-api
 
-Binds 127.0.0.1:8091 (API port is configured in cmd/api/main.go, const apiPort).
+Binds 127.0.0.1:8091 by default. The listen address and port are flags defined
+in cmd/api/main.go (`-address`, `-port`), overridable as shown in "Port" above.
 
 Keep it alive with tmux (pkg install tmux).
 
@@ -37,6 +48,8 @@ Keep it alive with tmux (pkg install tmux).
 
 ## Expose to the internet (Cloudflare Tunnel)
 Only the custom API (8091) is exposed.
+The tunnel origin below must match whatever address/port the server actually
+listens on (default 127.0.0.1:8091).
 
 Install: pkg install cloudflared tmux
 
