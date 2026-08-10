@@ -1,5 +1,4 @@
-// Command borum-api runs a standalone chi HTTP API on 127.0.0.1:8091.
-// No PocketBase: the data layer (Turso) is wired in separately.
+// Command borum-api runs a standalone chi HTTP API
 package main
 
 import (
@@ -16,15 +15,8 @@ import (
 	"github.com/borumbombum/borum-api/internal/tasks"
 	"github.com/joho/godotenv"
 
-	// _ "turso.tech/database/tursogo"
+	flag "github.com/spf13/pflag"
 	turso "turso.tech/database/tursogo-serverless"
-)
-
-const (
-	// apiVersion prefixes all custom API routes except the root health check.
-	apiVersion = "v1"
-	// apiPort is the only port the API listens on.
-	apiPort = "8091"
 )
 
 // app holds our dependencies and server state.
@@ -35,11 +27,26 @@ type app struct {
 
 func main() {
 	a := &app{}
+	// Load API routes
 	routes := a.apiRoutes()
+
+	// get configs
+	apiAddress := flag.StringP("address", "a", "127.0.0.1", "API Address")
+	apiPort := flag.StringP("port", "p", "8091", "API Port")
+
+	flag.Parse()
+
+	// Custom loggers
+	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	infoLog.Printf("Staring server someday")
+
+	// errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+	// errorLog.Fatal("Error")
 
 	// Bind the listener before announcing anything, so a port conflict is a
 	// fatal error instead of a process that is alive but serving nothing.
-	addr := "127.0.0.1:" + apiPort
+	addr := *apiAddress + ":" + *apiPort
+
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Fatalf("failed to listen on %s: %v", addr, err)
@@ -72,7 +79,7 @@ func main() {
 	}
 
 	// The listener is bound: print the banner and start serving.
-	printRoutes(routes)
+	printRoutes(routes, addr)
 
 	go func() {
 		if err := a.srv.Serve(ln); err != nil && err != http.ErrServerClosed {

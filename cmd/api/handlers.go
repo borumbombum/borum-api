@@ -22,17 +22,11 @@ func (a *app) healthHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte(fmt.Sprintf(`{"status": "error", "error": "db-unreachable", "latancy": %d}`, latency.Milliseconds())))
+		fmt.Fprintf(w, `{"status": "error", "error": "db-unreachable", "latancy": %d}`, latency.Milliseconds())
 		return
 	}
 
-	w.Write([]byte(fmt.Sprintf(`{"status":"ok","db":"ok","latancy":%d}`, latency.Milliseconds())))
-}
-
-// webHandler serves a placeholder HTML page for a future admin web UI.
-func (a *app) webHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(`<body><h1>This is an html response for the unprotected, you read well "unprotected" admin section</h1></body>`))
+	fmt.Fprintf(w, `{"status":"ok","db":"ok","latancy":%d}`, latency.Milliseconds())
 }
 
 // cmsHandler is a placeholder for the CMS endpoints.
