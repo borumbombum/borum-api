@@ -52,6 +52,8 @@ func (a *app) webHandler(w http.ResponseWriter, r *http.Request) {
 	batteryText := "Unknown"
 	batteryData, err := battery.Get()
 	if err != nil {
+		batteryText = "Unknown"
+	} else {
 		batteryText = fmt.Sprintf("%d%%", batteryData.Percentage)
 	}
 	fmt.Fprintf(w, "Battery: %s", batteryText)
