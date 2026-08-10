@@ -1,0 +1,82 @@
+/* ============================================================
+   Nav animations (animate.css-inspired)
+   ============================================================ */
+@keyframes rubberBand {
+    0% {
+        transform: scale(1);
+    }
+    30% {
+        transform: scaleX(1.25) scaleY(0.75);
+    }
+    40% {
+        transform: scaleX(1.15) scaleY(0.85);
+    }
+    50% {
+        transform: scaleX(1.05) scaleY(0.95);
+    }
+    65% {
+        transform: scaleX(1.02) scaleY(0.98);
+    }
+    75% {
+        transform: scaleX(1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+@keyframes flipOutY {
+    0% {
+        transform: perspective(400px) rotateY(0);
+        opacity: 1;
+    }
+    40% {
+        transform: perspective(400px) rotateY(-90deg);
+        opacity: 1;
+    }
+    70% {
+        transform: perspective(400px) rotateY(-90deg);
+        opacity: 1;
+    }
+    100% {
+        transform: perspective(400px) rotateY(0);
+        opacity: 0;
+    }
+}
+.nav-open-anim {
+    animation: rubberBand 0.6s ease;
+}
+.nav-close-anim {
+    animation: flipOutY 0.5s ease forwards;
+}
+
+
+/* ============================================================
+   Animations
+   ============================================================ */
+@keyframes rise-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.rise-in {
+    animation: rise-in 0.9s var(--ease-shizuka) both;
+}
+@media (prefers-reduced-motion: reduce) {
+    .rise-in {
+        animation: none;
+    }
+}
+
+@view-transition {
+    navigation: auto;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 0.45s;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}

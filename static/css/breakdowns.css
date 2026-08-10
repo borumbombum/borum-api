@@ -1,0 +1,52 @@
+/* ============================================================
+   Media queries
+   ============================================================ */
+@media (max-width: 768px) {
+    :root {
+        --wrapper-gutter: 1.5rem;
+    }
+    .star::before {
+        display: none;
+    }
+    .d-none-mobile {
+        display: none;
+    }
+    .author-box > :last-child {
+        padding-inline: 2rem;
+    }
+    .nav-buttons {
+        gap: 1.1rem;
+    }
+    .nav-buttons .btn-sm {
+        font-size: 0.7rem;
+    }
+    .wrapper-profile {
+        padding-inline: 0.2rem;
+    }
+    ul.archive-with-dates li {
+        display: flex;
+        justify-content: start;
+        flex-flow: row wrap;
+    }
+    ul.archive-with-dates li > div:last-child {
+        display: none;
+    }
+    ul.archive-with-dates .archive-inline-date {
+        display: inline-block;
+    }
+    .article-table th,
+    .article-table td {
+        padding: 0.5em 0.625em;
+        font-size: 0.75rem;
+    }
+}
+
+@media (min-width: 768px) {
+    .nav-buttons .battery-info {
+        font-size: 14px;
+    }
+    .nav-buttons .battery-info svg {
+        width: 24px;
+        height: 24px;
+    }
+}

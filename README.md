@@ -1,8 +1,9 @@
 # borum-api
 
-Single Go binary: a custom chi HTTP API. The data layer (Turso/libsql) is wired in
-and configured via environment variables (see `.env.example`).
-Custom routes are declared in `cmd/api/routes.go` (apiRoutes table).
+Single Go binary: a custom chi HTTP server that serves both the API and the
+web site. The data layer (Turso/libsql) is wired in and configured via
+environment variables (see `.env.example`).
+Custom routes are declared in `cmd/web/routes.go` (apiRoutes table).
 
 ## Setup
 
@@ -10,13 +11,41 @@ Custom routes are declared in `cmd/api/routes.go` (apiRoutes table).
 
 Then fill in `TURSO_URL` and `TURSO_TOKEN` with your Turso database values.
 
+## Run
+
+    go run ./cmd/web
+
 ## Code layout
 
-cmd/api/main.go   entry point: HTTP server bootstrap, graceful shutdown on SIGINT/SIGTERM
-cmd/api/routes.go route table (apiRoutes) + chi router — single source of truth for endpoints
-cmd/api/handlers.go HTTP handlers as methods on *app (injected dependencies)
-cmd/api/server.go  startup banner
+cmd/web/main.go    entry point: HTTP server bootstrap, graceful shutdown on SIGINT/SIGTERM
+cmd/web/routes.go  route table (apiRoutes) + chi router — single source of truth for endpoints
+cmd/web/handlers.go HTTP handlers as methods on *app (injected dependencies)
+cmd/web/web.go    web site views: template loading, page handlers, shared view model
+cmd/web/templates/ Go templates: base, header, footer, home, article, tag, 404
+cmd/web/server.go startup banner
+internal/content/  site data: articles and principles (Go source)
+internal/battery/  system battery snapshot used by the header
 internal/tasks/    minimal in-process scheduler for background jobs
+
+## Styling
+
+The site uses plain CSS — no Tailwind, no build step, no runtime. Styles are
+split into subject files under `static/css/` for editing, then concatenated in
+cascade order at server startup and served as a single `/styles.css` by
+`concatCSS()` in `cmd/web/web.go`. The browser makes one CSS request; edits to
+`static/css/*.css` apply on the next restart.
+
+- `static/css/theme.css` — design tokens: custom properties (`:root`) and light/dark theme overrides.
+- `static/css/base.css` — resets, base typography, wrappers, code/pre, backgrounds, images.
+- `static/css/components.css` — nav/header, footer, buttons, pill, archive, principles,
+  command palette, hero headings, heart button, highlight marks.
+- `static/css/prose.css` — article body typography and tables.
+- `static/css/animations.css` — keyframes and view transitions.
+- `static/css/breakdowns.css` — the responsive media queries (mobile/desktop breakdown).
+- `static/css/utilities.css` — utility classes used by the templates and `app.js`.
+
+The concat order defines the cascade: theme → base → components → prose →
+animations → breakdowns → utilities.
 
 ## Port
 
@@ -28,11 +57,11 @@ binary:
 ./borum-api -address=0.0.0.0 -port=8092
 ```
 
-or with env vars when using `run.sh`:
+or with env vars when using `./deploy.sh`:
 
 ```
-PORT=8092 ./run.sh
-ADDRESS=0.0.0.0 PORT=8092 ./run.sh
+PORT=8092 ./deploy.sh
+ADDRESS=0.0.0.0 PORT=8092 ./deploy.sh
 ```
 
 ## Build & run on Termux
@@ -40,11 +69,11 @@ ADDRESS=0.0.0.0 PORT=8092 ./run.sh
     pkg install golang git tmux
     git clone https://github.com/borumbombum/borum-api.git
     cd borum-api
-    CGO_ENABLED=0 go build -o borum-api ./cmd/api
+    CGO_ENABLED=0 go build -o borum-api ./cmd/web
     ./borum-api
 
 Binds 127.0.0.1:8091 by default. The listen address and port are flags defined
-in cmd/api/main.go (`-address`, `-port`), overridable as shown in "Port" above.
+in cmd/web/main.go (`-address`, `-port`), overridable as shown in "Port" above.
 
 Keep it alive with tmux (pkg install tmux).
 

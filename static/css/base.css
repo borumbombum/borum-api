@@ -1,0 +1,335 @@
+/* ============================================================
+   Resets
+   ============================================================ */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    transition: opacity 0.5s linear;
+}
+* {
+    margin: 0;
+    padding: 0;
+}
+html {
+    -moz-text-size-adjust: none;
+    -webkit-text-size-adjust: none;
+    text-size-adjust: none;
+}
+body,
+html {
+    overflow-x: hidden;
+}
+body {
+    overflow-x: hidden;
+    margin: 0;
+    background: var(--background);
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
+a {
+    text-decoration: none;
+    cursor: pointer;
+}
+code {
+    word-wrap: break-word;
+}
+button {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+button:focus:not(:focus-visible) {
+    outline: 0;
+}
+input,
+button,
+select,
+optgroup,
+textarea {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+}
+img,
+svg {
+    max-width: 100%;
+    vertical-align: middle;
+}
+svg.fa {
+    display: inline-block;
+    width: var(--svg-icon-size);
+    aspect-ratio: 1/1;
+    fill: var(--foreground-text);
+}
+
+
+/* ============================================================
+   Base typography
+   ============================================================ */
+body,
+code,
+pre {
+    line-height: 1.5;
+    font-size: var(--fs-clamped-300);
+    font-family: var(--ff-body);
+    font-weight: 300;
+    color: var(--foreground-text);
+}
+p {
+    margin-top: 1rem;
+    font-size: var(--fs-clamped-300);
+}
+blockquote p {
+    margin: 0;
+    font-size: var(--fs-clamped-500);
+    font-family: var(--ff-heading);
+    line-height: 1;
+}
+pre > code,
+figcaption {
+    font-size: var(--fs-clamped-200);
+}
+figcaption {
+    color: var(--foreground-text);
+    font-style: italic;
+    text-align: right;
+    margin: 0.5rem 1rem auto 1rem;
+}
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6 {
+    overflow-wrap: break-word;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6 {
+    font-family: var(--ff-heading);
+    line-height: 1;
+    margin: 1rem 0;
+    text-wrap: balance;
+}
+h6,
+.h6,
+h5,
+.h5,
+h4,
+.h4 {
+    font-weight: 400;
+}
+h3,
+.h3,
+h2,
+.h2,
+h1,
+.h1 {
+    font-weight: 600;
+}
+h6,
+.h6 {
+    font-size: var(--fs-clamped-400);
+}
+h5,
+.h5 {
+    font-size: var(--fs-clamped-500);
+}
+h4,
+.h4 {
+    font-size: var(--fs-clamped-600);
+}
+h3,
+.h3 {
+    font-size: var(--fs-clamped-700);
+}
+h2,
+.h2 {
+    font-size: var(--fs-clamped-800);
+}
+h1,
+.h1 {
+    font-size: var(--fs-clamped-900);
+}
+.nav,
+.nav a {
+    font-size: var(--fs-clamped-300);
+}
+.wrapper-profile p,
+.fs-400 {
+    line-height: 1.5;
+    font-size: var(--fs-clamped-400);
+    font-weight: 300;
+}
+p.profile-links a {
+    font-size: var(--fs-clamped-400);
+    font-weight: 400;
+    line-height: 1.75rem;
+}
+a {
+    color: var(--foreground-text);
+    border-bottom: var(--links-border);
+    font-weight: 400;
+}
+a:hover {
+    opacity: 0.5;
+}
+strong {
+    font-weight: 400;
+}
+article strong {
+    font-weight: 600;
+}
+article h1,
+article h2,
+article h3,
+article h4,
+article h5,
+article h6 {
+    font-style: italic;
+}
+
+
+/* ============================================================
+   Skip to main content
+   ============================================================ */
+a.skip-to-main-content {
+    position: absolute;
+    left: -9999px;
+    z-index: 999;
+    padding: 1em;
+    background-color: var(--foreground-text);
+    color: var(--background);
+    opacity: 0;
+}
+.skip-to-main-content:focus {
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 1;
+}
+
+
+/* ============================================================
+   Wrapper system
+   ============================================================ */
+.wrapper {
+    width: 100%;
+    max-width: var(--main-content-max);
+    margin-inline: auto;
+    padding-inline: var(--wrapper-gutter);
+    clear: both;
+}
+.wrapper-wide {
+    max-width: var(--secondary-content-max);
+}
+.wrapper-widest {
+    max-width: var(--widest-content-max);
+}
+.wrapper-profile {
+    padding: 0;
+    margin-top: 1rem;
+    margin-bottom: 3rem;
+    text-align: justify;
+}
+.wrapper > figure {
+    margin: 12px 0;
+}
+
+
+/* ============================================================
+   Code / Pre
+   ============================================================ */
+code {
+    font-style: normal;
+    background: var(--high-background);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+pre {
+    background: var(--high-background);
+    padding: 0.5rem 2rem;
+    border-radius: 0.5rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-style: normal;
+    font-weight: 300;
+}
+pre > code {
+    background: none;
+    padding: 0;
+    white-space: unset;
+}
+
+
+/* ============================================================
+   Background gradient with noise
+   ============================================================ */
+.bg-grey {
+    background: var(--high-background-gradient);
+}
+.bg--angled {
+    clip-path: polygon(0 0, 100% 0%, 100% calc(100% - 5vh), 0% 100%);
+}
+
+
+/* ============================================================
+   Profile image
+   ============================================================ */
+.img-profile {
+    display: block;
+    margin-inline: auto;
+    text-align: center;
+    width: 132px;
+    border: 1px solid white;
+    padding: 2px;
+    cursor: pointer;
+}
+.img-circular {
+    border-radius: 50%;
+    aspect-ratio: 1 / 1;
+}
+
+
+/* ============================================================
+   Image utilities
+   ============================================================ */
+.img-rounded {
+    border-radius: 0.5rem;
+}
+.img-rotate {
+    transform: rotate(-1deg);
+    transition: transform 0.3s ease-in-out;
+}
+.img-rotate:hover {
+    transform: rotate(0deg);
+}
+
+
+/* ============================================================
+   HR separator
+   ============================================================ */
+hr {
+    border: 0;
+    height: 1px;
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0), var(--foreground-text), rgba(0, 0, 0, 0));
+    margin: 2rem 0;
+}

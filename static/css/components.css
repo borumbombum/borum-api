@@ -1,0 +1,529 @@
+/* ============================================================
+   Nav
+   ============================================================ */
+.header {
+    padding-bottom: 3rem;
+    margin-top: 1rem;
+    position: relative;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+.nav-buttons {
+    display: flex;
+    gap: 1.5rem;
+    line-height: 1rem;
+    align-items: center;
+}
+.nav > * {
+    flex-basis: auto;
+}
+.nav {
+    position: fixed;
+    list-style: none;
+    display: none;
+    flex-direction: column;
+    gap: var(--gap, 1.6rem);
+    justify-content: center;
+    align-items: center;
+    inset: 2rem;
+    z-index: 2000;
+    min-height: 26rem;
+    border-radius: 1rem;
+    max-width: 40rem;
+    margin: 0 auto;
+    background: var(--nav-backdrop);
+    border: var(--nav-border);
+}
+.nav a:not(.btn) {
+    display: flex;
+    font-weight: 300;
+    color: var(--foreground-text);
+    border: none;
+    line-height: 1;
+}
+.nav > li.active > a,
+.nav a:hover:not(.btn) {
+    font-weight: 600;
+    color: var(--nav-item-selected-color);
+    font-style: italic;
+}
+.nav a:hover:not(.btn) {
+    opacity: 1;
+    font-weight: 600;
+}
+.nav > li.active > a::before,
+.nav a:not(.primary-nav-icons > a):hover::before {
+    content: "~";
+    position: relative;
+    line-height: 1;
+    transform: translateX(-50%);
+    color: red;
+    font-weight: 600;
+}
+.nav a.btn:hover::before {
+    content: "";
+    display: none;
+}
+.primary-nav-icons {
+    display: flex;
+    gap: 1rem;
+}
+.primary-nav-icons a {
+    flex: 1 1 auto;
+}
+.primary-nav-icons a:hover {
+    opacity: 0.5;
+}
+.nav-toggle,
+.theme-toggle,
+.shortcuts-toggle {
+    position: relative;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    background-repeat: no-repeat !important;
+}
+.nav-toggle {
+    background: url('data:image/svg+xml,<svg viewBox="0 0 400 400" fill="black" xmlns="http://www.w3.org/2000/svg"><circle cx="60" cy="60" r="40" /><circle cx="200" cy="60" r="40" /><circle cx="340" cy="60" r="40" /><circle cx="60" cy="200" r="40" /><circle cx="200" cy="200" r="40" /><circle cx="340" cy="200" r="40" /><circle cx="60" cy="340" r="40" /><circle cx="200" cy="340" r="40" /><circle cx="340" cy="340" r="40" /></svg>')
+        no-repeat center;
+    z-index: 2000;
+}
+.cross {
+    background-image: url('data:image/svg+xml, <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><path d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"/></svg>');
+    background-size: 25px 25px;
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+}
+.shortcuts-toggle {
+    background-image: url('data:image/svg+xml, <svg xmlns="http://www.w3.org/2000/svg" fill="black" viewBox="0 0 576 512"><path d="M64 64C28.7 64 0 92.7 0 128V384c0 35.3 28.7 64 64 64H512c35.3 0 64-28.7 64-64V128c0-35.3-28.7-64-64-64H64zm16 64h32c8.8 0 16 7.2 16 16v32c0 8.8-7.2 16-16 16H80c-8.8 0-16-7.2-16-16V144c0-8.8 7.2-16 16-16zM64 240c0-8.8 7.2-16 16-16h32c8.8 0 16 7.2 16 16v32c0 8.8-7.2 16-16 16H80c-8.8 0-16-7.2-16-16V240zm16 80h32c8.8 0 16 7.2 16 16v32c0 8.8-7.2 16-16 16H80c-8.8 0-16-7.2-16-16V336c0-8.8 7.2-16 16-16zm80-176c0-8.8 7.2-16 16-16h32c8.8 0 16 7.2 16 16v32c0 8.8-7.2 16-16 16H176c-8.8 0-16-7.2-16-16V144zm16 80h32c8.8 0 16 7.2 16 16v32c0 8.8-7.2 16-16 16H176c-8.8 0-16-7.2-16-16V240c0-8.8 7.2-16 16-16zM160 336c0-8.8 7.2-16 16-16H400c8.8 0 16 7.2 16 16v32c0 8.8-7.2 16-16 16H176c-8.8 0-16-7.2-16-16V336zM272 128h32c8.8 0 16 7.2 16 16v32c0 8.8-7.2 16-16 16H272c-8.8 0-16-7.2-16-16V144c0-8.8 7.2-16 16-16zM256 240c0-8.8 7.2-16 16-16h32c8.8 0 16 7.2 16 16v32c0 8.8-7.2 16-16 16H272c-8.8 0-16-7.2-16-16V240zM368 128h32c8.8 0 16 7.2 16 16v32c0 8.8-7.2 16-16 16H368c-8.8 0-16-7.2-16-16V144c0-8.8 7.2-16 16-16zM352 240c0-8.8 7.2-16 16-16h32c8.8 0 16 7.2 16 16v32c0 8.8-7.2 16-16 16H368c-8.8 0-16-7.2-16-16V240zM464 128h32c8.8 0 16 7.2 16 16v32c0 8.8-7.2 16-16 16H464c-8.8 0-16-7.2-16-16V144c0-8.8 7.2-16 16-16zM448 240c0-8.8 7.2-16 16-16h32c8.8 0 16 7.2 16 16v32c0 8.8-7.2 16-16 16H464c-8.8 0-16-7.2-16-16V240zm16 80h32c8.8 0 16 7.2 16 16v32c0 8.8-7.2 16-16 16H464c-8.8 0-16-7.2-16-16V336c0-8.8 7.2-16 16-16z"/></svg>');
+}
+.nav[data-opened="true"] {
+    display: flex;
+}
+@supports (backdrop-filter: blur(0.5rem)) {
+    .nav {
+        backdrop-filter: blur(0.5rem);
+    }
+}
+
+
+/* ============================================================
+   Footer / Author box
+   ============================================================ */
+.footer {
+    margin: 1rem auto;
+    padding: 0rem 0;
+    font-size: var(--fs-clamped-200);
+    text-align: center;
+    padding-bottom: 1rem;
+}
+.author-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 2.1rem 0 0.5rem 0;
+}
+.author-box + p,
+.alert {
+    background: var(--high-background-gradient);
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    width: max-content;
+    margin: 1rem auto;
+    font-size: var(--fs-clamped-200);
+}
+.author-box img {
+    max-width: 100px;
+}
+.author-box div:first-child {
+    flex: 0.5;
+    align-self: center;
+}
+.author-box > :last-child {
+    text-align: center;
+    flex: 2;
+    padding-inline: 3rem;
+}
+.author-box div:last-child a {
+    border-bottom: 0;
+}
+.author-box dl {
+    font-size: var(--fs-clamped-200);
+}
+.author-box dt {
+    text-align: center;
+}
+.author-box dl dd {
+    text-align: center;
+}
+
+
+/* ============================================================
+   Buttons / Forms
+   ============================================================ */
+.btn,
+form input[type="button"] {
+    display: inline-block;
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #fff;
+    text-align: center;
+    text-decoration: none;
+    vertical-align: middle;
+    cursor: pointer;
+    user-select: none;
+    border: 1px solid #0d6efd;
+    border-radius: 0.375rem;
+    background-color: #0d6efd;
+    transition:
+        color 0.15s ease-in-out,
+        background-color 0.15s ease-in-out,
+        border-color 0.15s ease-in-out,
+        box-shadow 0.15s ease-in-out;
+}
+.btn:hover {
+    color: #fff;
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+.btn-primary {
+    border: 1px solid #000;
+    background-color: #000;
+}
+.btn-primary:hover {
+    background-color: white;
+    border: 1px solid #000;
+    color: #000;
+    opacity: 1;
+}
+.btn-sm {
+    padding: 0.25rem 1rem;
+    border-radius: 1rem;
+    font-size: 0.8rem;
+}
+.btn-cta {
+    top: -4px;
+    position: relative;
+}
+
+
+/* ============================================================
+   Pill/tag badge
+   ============================================================ */
+.pill {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    font-size: var(--fs-clamped-200);
+    font-weight: 300;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 30px;
+    text-transform: lowercase;
+    background: var(--high-background);
+    margin-left: 0.2rem;
+}
+
+
+/* ============================================================
+   Archive list
+   ============================================================ */
+.archive-with-dates {
+    list-style: none;
+    padding-inline: 0.5rem;
+}
+.archive-with-dates li {
+    display: flex;
+    justify-content: space-between;
+}
+.archive-with-dates a {
+    font-weight: 200;
+    border-bottom: 0;
+    text-decoration: none;
+}
+.archive-with-dates a:hover {
+    opacity: 0.5;
+}
+.star::before {
+    content: "";
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%232e3033"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>')
+        no-repeat center;
+    position: absolute;
+    transform: translateX(-130%) translateY(18%);
+    width: 16px;
+    height: 16px;
+}
+.archive-inline-date {
+    display: none;
+}
+.archive p {
+    margin-top: 3px;
+}
+.archive a {
+    border-bottom: 0;
+}
+
+
+/* ============================================================
+   Principles
+   ============================================================ */
+.principles-section {
+    margin-top: 3rem;
+}
+.principle-scroll {
+    outline: none;
+    border-top: 1px solid var(--color-hairline);
+}
+.principle-scroll:focus-visible {
+    outline: 1px solid var(--color-hairline-strong);
+}
+.principle-item {
+    border-bottom: 1px solid var(--color-hairline);
+}
+.principle-item:last-child {
+    border-bottom: none;
+}
+.principle-row {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    width: 100%;
+    padding: 0.75rem 0.5rem;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    font-family: var(--ff-body);
+    font-size: var(--fs-clamped-300);
+    font-weight: 300;
+    color: var(--foreground-text);
+}
+.principle-row:hover,
+.principle-row.selected {
+    background: var(--high-background-gradient);
+}
+.principle-num {
+    flex-shrink: 0;
+    font-family: var(--ff-body);
+    font-size: var(--fs-clamped-200);
+    font-style: italic;
+    opacity: 0.5;
+}
+.principle-row.selected .principle-num {
+    color: red;
+    opacity: 1;
+}
+.principle-title {
+    font-family: var(--ff-heading);
+    font-size: var(--fs-clamped-300);
+    font-weight: 400;
+    line-height: 1.15;
+}
+.principle-row.selected .principle-title {
+    font-weight: 600;
+    font-style: italic;
+}
+.principle-detail {
+    margin-top: 0.75rem;
+    padding: 0 1.5rem 1.25rem;
+    text-align: left;
+}
+.principle-detail p {
+    margin-top: 0.75rem;
+    font-size: var(--fs-clamped-100);
+}
+@media (max-width: 768px) {
+    .principle-detail {
+        padding: 0 0.5rem 1rem;
+    }
+}
+
+
+/* ============================================================
+   Command palette (tmux-style bottom bar)
+   ============================================================ */
+.command-palette {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--background);
+    border-top: 1px solid var(--color-hairline-strong);
+    font-family: var(--ff-body);
+    font-size: var(--fs-clamped-300);
+}
+.command-prompt {
+    font-style: italic;
+    opacity: 0.5;
+    user-select: none;
+}
+.command-input {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    outline: none;
+    color: var(--foreground-text);
+    font-family: var(--ff-body);
+    font-size: var(--fs-clamped-300);
+    font-weight: 300;
+    padding: 0;
+}
+.command-hint {
+    font-size: var(--fs-clamped-200);
+    opacity: 0.5;
+}
+
+
+/* ============================================================
+   Tags
+   ============================================================ */
+.tags a {
+    text-decoration: none;
+    border-bottom: 0;
+}
+
+
+/* ============================================================
+   Heart voting button
+   ============================================================ */
+.heart-btn {
+    position: relative;
+    transition: transform 0.2s ease;
+    overflow: visible;
+}
+.heart-btn:not(.liked):hover {
+    transform: scale(1.08);
+}
+.heart-btn svg {
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.heart-btn.liked svg {
+    fill: #dc3545;
+    stroke: #dc3545;
+}
+.heart-btn.animate-pop svg {
+    animation: heartPop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes heartPop {
+    0% {
+        transform: scale(1);
+    }
+    15% {
+        transform: scale(1.35);
+    }
+    30% {
+        transform: scale(0.9);
+    }
+    45% {
+        transform: scale(1.2);
+    }
+    60% {
+        transform: scale(1);
+    }
+}
+
+/* Particle burst */
+.heart-particle {
+    position: fixed;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    animation: heartParticleBurst 0.7s ease-out forwards;
+}
+@keyframes heartParticleBurst {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--tx), var(--ty)) scale(0);
+    }
+}
+
+
+/* ============================================================
+   Hero heading
+   ============================================================ */
+.hero-heading {
+    font-family: var(--ff-heading);
+    font-size: var(--fs-clamped-600);
+    font-weight: 400;
+    line-height: 1;
+    margin-top: 3rem;
+}
+
+
+/* ============================================================
+   Article hero
+   ============================================================ */
+.article-hero {
+    font-family: var(--ff-heading);
+    font-style: italic;
+    font-weight: 600;
+    font-size: var(--fs-clamped-900);
+    line-height: 1;
+    margin: 0;
+    text-wrap: balance;
+    text-align: center;
+}
+.article-description {
+    font-family: var(--ff-body);
+    font-size: var(--fs-clamped-400);
+    font-weight: 300;
+    line-height: 1.2;
+    text-align: center;
+}
+.article-date {
+    font-family: var(--ff-body);
+    font-size: var(--fs-clamped-200);
+    font-style: italic;
+    text-align: center;
+}
+
+
+/* ============================================================
+   Read more
+   ============================================================ */
+.read-more-btn {
+    cursor: pointer;
+}
+.read-more-text {
+    transition: height 0.5s ease;
+    overflow: hidden;
+}
+.read-more-text:not(.read-more-text-active) {
+    display: none;
+}
+
+
+/* ============================================================
+   Highlight marks
+   ============================================================ */
+mark.highlight {
+    background: linear-gradient(to bottom, transparent 40%, var(--color-mark) 40%);
+    color: inherit;
+    cursor: pointer;
+    border-radius: 1px;
+    padding: 0 1px;
+    transition: background 0.2s var(--ease-shizuka);
+}
+mark.highlight:hover {
+    background: linear-gradient(to bottom, transparent 30%, var(--color-mark) 30%);
+}
+mark.highlight.active {
+    background: var(--color-mark);
+}

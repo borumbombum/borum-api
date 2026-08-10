@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/borumbombum/borum-api/internal/battery"
 	"github.com/borumbombum/borum-api/internal/tasks"
 	"github.com/joho/godotenv"
 
@@ -23,12 +24,23 @@ import (
 type app struct {
 	srv *http.Server
 	db  *sql.DB
+	css []byte
 }
 
 func main() {
 	a := &app{}
 	// Load API routes
 	routes := a.apiRoutes()
+
+	if err := loadTemplates(); err != nil {
+		log.Fatal(err)
+	}
+
+	css, err := concatCSS()
+	if err != nil {
+		log.Fatal(err)
+	}
+	a.css = css
 
 	// get configs
 	apiAddress := flag.StringP("address", "a", "127.0.0.1", "API Address")
@@ -64,7 +76,7 @@ func main() {
 
 	// start the server
 	a.srv = &http.Server{
-		Handler:      router(routes),
+		Handler:      router(a, routes),
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  15 * time.Second,
@@ -72,6 +84,9 @@ func main() {
 
 	// Start the scheduler. A zero-job scheduler is suspicious (the heartbeat is
 	// auto-registered), so surface it with a warning instead of failing hard.
+	// The battery job must be added before Register starts the loop.
+	tasks.Add("battery", time.Minute, battery.Refresh)
+	go battery.Refresh()
 	if n := tasks.Register(); n == 0 {
 		log.Println("borum-api: warning: scheduler started with 0 jobs")
 	} else {
