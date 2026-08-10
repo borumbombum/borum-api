@@ -24,6 +24,7 @@ func (a *app) apiRoutes() []apiRoute {
 	return []apiRoute{
 		{http.MethodGet, "/", a.healthHandler},
 		{http.MethodGet, "/cms", a.cmsHandler},
+		{http.MethodGet, "/web", a.webHandler},
 	}
 }
 
