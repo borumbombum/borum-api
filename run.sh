@@ -11,7 +11,7 @@ PORT="${PORT:-8091}"
 BASE="http://${ADDRESS}:${PORT}"
 
 CGO_ENABLED=0 go build -o borum-api ./cmd/api
-./borum-api -address="$ADDRESS" -port="$PORT" &
+./borum-api --address="$ADDRESS" --port="$PORT" &
 SERVER_PID=$!
 trap 'kill $SERVER_PID 2>/dev/null; pkill -x cloudflared 2>/dev/null' EXIT
 

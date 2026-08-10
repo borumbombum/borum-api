@@ -38,7 +38,7 @@ func main() {
 
 	// Custom loggers
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
-	infoLog.Printf("Staring server someday")
+	infoLog.Printf("Starting server someday")
 
 	// errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 	// errorLog.Fatal("Error")
