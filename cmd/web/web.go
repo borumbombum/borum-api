@@ -192,10 +192,10 @@ func (a *app) tagHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	sort.SliceStable(filtered, func(i, j int) bool { return filtered[i].Date > filtered[j].Date })
 	data := struct {
-		ActiveNav string
-		Tag       string
-		Articles  []content.Article
-	}{ActiveNav: "articles", Tag: tag, Articles: filtered}
+		pageData
+		Tag      string
+		Articles []content.Article
+	}{pageData: pageData{ActiveNav: "articles", Battery: battery.Current()}, Tag: tag, Articles: filtered}
 	renderPage(w, http.StatusOK, "tag", data)
 }
 
