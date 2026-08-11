@@ -1,9 +1,9 @@
 {{define "header"}}<header class="header">
     <div class="nav-buttons">
         {{if .Battery.Available}}
-            <span class="inline-flex items-center gap-1 font-mono text-[13px] text-ink-soft battery-info" title="Battery {{.Battery.Percentage}}%"><i data-lucide="{{batteryIcon .Battery.Percentage .Battery.Charging}}" width="22" height="22"></i> {{.Battery.Percentage}}%</span>
+            <button type="button" class="battery-info inline-flex items-center gap-1 font-mono text-[13px] text-ink-soft" title="Battery details" data-available="true" data-percentage="{{.Battery.Percentage}}" data-charging="{{.Battery.Charging}}" data-status="{{.Battery.Status.Status}}" data-health="{{.Battery.Health}}" data-plugged="{{.Battery.Plugged}}" data-temperature="{{.Battery.Temperature}}" data-current="{{.Battery.Current}}" data-device="{{deviceModel}}"><i data-lucide="{{batteryIcon .Battery.Percentage .Battery.Charging}}" width="22" height="22"></i> {{.Battery.Percentage}}%</button>
         {{else}}
-            <span class="inline-flex items-center gap-1 font-mono text-[13px] text-ink-soft battery-info" title="Battery status unavailable"><i data-lucide="battery" width="22" height="22"></i> N/A</span>
+            <button type="button" class="battery-info inline-flex items-center gap-1 font-mono text-[13px] text-ink-soft" title="Battery status unavailable" data-available="false" data-device="{{deviceModel}}"><i data-lucide="battery" width="22" height="22"></i> N/A</button>
         {{end}}
         <button class="shortcuts-toggle d-none" title="Shortcuts">
             <span class="sr-only">Shortcuts menu Toggle</span>

@@ -41,11 +41,11 @@ cascade order at server startup and served as a single `/styles.css` by
   command palette, hero headings, heart button, highlight marks.
 - `static/css/prose.css` — article body typography and tables.
 - `static/css/animations.css` — keyframes and view transitions.
-- `static/css/breakdowns.css` — the responsive media queries (mobile/desktop breakdown).
+- `static/css/breakpoints.css` — the responsive media queries (mobile/desktop breakpoints).
 - `static/css/utilities.css` — utility classes used by the templates and `app.js`.
 
 The concat order defines the cascade: theme → base → components → prose →
-animations → breakdowns → utilities.
+animations → breakpoints → utilities.
 
 ## Port
 

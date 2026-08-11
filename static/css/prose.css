@@ -29,6 +29,14 @@
 .prose-diary a:hover {
     text-decoration-color: var(--color-muted);
 }
+.prose-diary ul {
+    margin-top: 1rem;
+    padding-left: 1.5rem;
+    list-style: disc;
+}
+.prose-diary li {
+    margin-top: 0.5rem;
+}
 
 .article p {
     margin-top: 1rem;
