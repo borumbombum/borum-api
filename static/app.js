@@ -244,7 +244,7 @@
 			}
 			var device = btn.getAttribute('data-device');
 			var intro = device
-				? 'This site is served from a ' + device + ' running the Go/chi stack.'
+				? 'This site is served from a <strong>' + device + ' Android Phone</strong> running the Go/chi stack.'
 				: 'This site is served from an Android phone running the Go/chi stack.';
 			var body = '<p>' + intro + '</p><p>' + rows.join('<br>') + '</p>';
 			openModal({ title: 'Battery', body: body });
