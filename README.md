@@ -116,6 +116,5 @@ termux-wake-lock
 ## Connect to phone
 
 ```
-ssh -p 8022 100.66.9.5
+ssh -p 8022 [IP]
 ```
-
