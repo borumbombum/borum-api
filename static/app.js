@@ -246,7 +246,7 @@
 			var intro = device
 				? 'This site is served from a <strong>' + device + ' Android Phone</strong> running the Go/chi stack.'
 				: 'This site is served from an Android phone running the Go/chi stack.';
-			var body = '<p>' + intro + '</p><p class="opacity-70">' + rows.join('<br>') + '</p>';
+			var body = '<p>' + intro + '</p><p class="opacity-70">' + rows.join('<br>') + '</p><p>Be self-soveraign ✊</p>';
 			openModal({ title: 'Battery', body: body });
 		});
 	});

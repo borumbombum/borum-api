@@ -443,6 +443,14 @@ form input[type="button"] {
 .modal[aria-label="Battery"] .modal-body p {
     font-size: var(--fs-clamped-200);
 }
+@media (max-width: 768px) {
+    .modal {
+        font-size: var(--fs-clamped-400);
+    }
+    .modal[aria-label="Battery"] .modal-body p {
+        font-size: var(--fs-clamped-300);
+    }
+}
 
 
 /* ============================================================
