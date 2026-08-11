@@ -14,21 +14,24 @@ import (
 
 	"github.com/borumbombum/borum-api/internal/battery"
 	"github.com/borumbombum/borum-api/internal/tasks"
-	"github.com/joho/godotenv"
 
+	"github.com/joho/godotenv"
 	flag "github.com/spf13/pflag"
 	turso "turso.tech/database/tursogo-serverless"
 )
 
 // app holds our dependencies and server state.
 type app struct {
-	srv *http.Server
-	db  *sql.DB
-	css []byte
+	srv         *http.Server
+	db          *sql.DB
+	css         []byte
+	errorLogger *log.Logger
 }
 
 func main() {
+	// Initialize the app
 	a := &app{}
+
 	// Load API routes
 	routes := a.apiRoutes()
 
@@ -51,9 +54,10 @@ func main() {
 	// Custom loggers
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	infoLog.Printf("Starting server someday")
+	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Llongfile)
 
-	// errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
-	// errorLog.Fatal("Error")
+	a.errorLogger = errorLog
+
 
 	// Bind the listener before announcing anything, so a port conflict is a
 	// fatal error instead of a process that is alive but serving nothing.
@@ -80,6 +84,7 @@ func main() {
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  15 * time.Second,
+		ErrorLog:     errorLog,
 	}
 
 	// Start the scheduler. A zero-job scheduler is suspicious (the heartbeat is

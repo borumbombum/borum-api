@@ -25,6 +25,7 @@ func (a *app) healthHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
+		a.errorTrace(w, err)
 		fmt.Fprintf(w, `{"status": "error", "error": "db-unreachable", "detail": %q, "latancy": %d}`, err.Error(), latency.Milliseconds())
 		return
 	}
@@ -32,6 +33,7 @@ func (a *app) healthHandler(w http.ResponseWriter, r *http.Request) {
 	batteryData, err := battery.Get()
 	var batteryJSON []byte
 	if err != nil {
+		a.errorLogger.Print(err.Error())
 		batteryJSON = []byte("null")
 	} else {
 		batteryJSON, _ = json.Marshal(batteryData)
