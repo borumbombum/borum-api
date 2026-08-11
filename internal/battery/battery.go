@@ -89,3 +89,21 @@ var (
 	mu       sync.RWMutex
 	snapshot Snapshot
 )
+
+var (
+	deviceModelOnce sync.Once
+	deviceModelVal  string
+)
+
+// DeviceModel returns the Android model code (ro.product.model), read once
+// at first call. Returns "" when not running on Android (getprop missing),
+// so callers can fall back to generic text.
+func DeviceModel() string {
+	deviceModelOnce.Do(func() {
+		out, err := exec.Command("getprop", "ro.product.model").Output()
+		if err == nil {
+			deviceModelVal = strings.TrimSpace(string(out))
+		}
+	})
+	return deviceModelVal
+}

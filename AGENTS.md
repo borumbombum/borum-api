@@ -20,9 +20,9 @@
 # CSS
 
 - Styles live split by subject in `static/css/` and are concatenated at startup by `concatCSS()` in `cmd/web/web.go` (see the README "Styling" section).
-- `static/css/breakdowns.css` holds the responsive media queries — the mobile/desktop breakdown.
+- `static/css/breakpoints.css` holds the responsive media queries — the mobile/desktop breakpoints.
 - Reuse the established breakpoints. Do not invent new ones:
   - `768px` — the mobile/desktop split (`max-width: 768px` for mobile overrides, `min-width: 768px` for desktop overrides).
   - `640px` — a smaller tier, used by the `.sm\:inline` utility.
-- If a media query only affects one component, co-locate it in that component's file (e.g. `.article-table` lives in `prose.css`). Put global responsive rules in `breakdowns.css`.
-- Remember the concat order — theme, base, components, prose, animations, breakdowns, utilities — when a rule must win. Equal-specificity rules later in the list win.
+- If a media query only affects one component, co-locate it in that component's file (e.g. `.article-table` lives in `prose.css`). Put global responsive rules in `breakpoints.css`.
+- Remember the concat order — theme, base, components, prose, animations, breakpoints, utilities — when a rule must win. Equal-specificity rules later in the list win.

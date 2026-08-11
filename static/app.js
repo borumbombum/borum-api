@@ -153,6 +153,104 @@
 		closePalette();
 	}
 
+	/* ------------------------------------------------ modal */
+	var modalRoot = $('#modal-root');
+	var modalOpen = false;
+	var modalTrigger = null;
+
+	function openModal(opts) {
+		if (!modalRoot) return;
+		var title = opts.title || '';
+		var body = opts.body || '';
+
+		modalRoot.textContent = '';
+		modalTrigger = doc.activeElement;
+
+		var backdrop = doc.createElement('div');
+		backdrop.className = 'modal-backdrop';
+		backdrop.setAttribute('role', 'presentation');
+
+		var dialog = doc.createElement('div');
+		dialog.className = 'modal modal-in';
+		dialog.setAttribute('role', 'dialog');
+		dialog.setAttribute('aria-modal', 'true');
+		if (title) dialog.setAttribute('aria-label', title);
+		dialog.tabIndex = -1;
+
+		var close = doc.createElement('button');
+		close.type = 'button';
+		close.className = 'modal-close';
+		close.setAttribute('aria-label', 'Close');
+		close.textContent = '\u2715';
+		close.addEventListener('click', closeModal);
+
+		if (title) {
+			var h = doc.createElement('h2');
+			h.className = 'modal-title';
+			h.textContent = title;
+			dialog.appendChild(h);
+		}
+
+		if (typeof body === 'string') {
+			var p = doc.createElement('div');
+			p.className = 'modal-body';
+			p.innerHTML = body;
+			dialog.appendChild(p);
+		} else {
+			body.className = (body.className || '') + ' modal-body';
+			dialog.appendChild(body);
+		}
+
+		dialog.appendChild(close);
+		backdrop.appendChild(dialog);
+		modalRoot.appendChild(backdrop);
+
+		backdrop.addEventListener('click', function (e) {
+			if (e.target === backdrop) closeModal();
+		});
+
+		modalOpen = true;
+		dialog.focus();
+	}
+	function closeModal() {
+		if (!modalRoot || !modalOpen) return;
+		modalRoot.textContent = '';
+		modalOpen = false;
+		if (modalTrigger && modalTrigger.focus) modalTrigger.focus();
+		modalTrigger = null;
+	}
+
+	/* ------------------------------------------------ battery modal */
+	$$('.battery-info').forEach(function (btn) {
+		btn.addEventListener('click', function () {
+			var avail = btn.getAttribute('data-available') === 'true';
+			var rows = [];
+			if (avail) {
+				var pct = btn.getAttribute('data-percentage');
+				var charging = btn.getAttribute('data-charging') === 'true';
+				var status = btn.getAttribute('data-status') || '';
+				var health = btn.getAttribute('data-health') || '';
+				var plugged = btn.getAttribute('data-plugged') || '';
+				var temp = Number(btn.getAttribute('data-temperature'));
+				var current = Number(btn.getAttribute('data-current'));
+				rows.push('<strong>' + pct + '%</strong> · ' + (charging ? 'Charging' : 'Not charging'));
+				if (status) rows.push('Status: ' + status);
+				if (health) rows.push('Health: ' + health);
+				if (plugged) rows.push('Plugged: ' + plugged);
+				if (!isNaN(temp)) rows.push('Temperature: ' + temp + '\u00b0C');
+				if (!isNaN(current)) rows.push('Current: ' + current + ' mA');
+			} else {
+				rows.push('Battery status unavailable.');
+			}
+			var device = btn.getAttribute('data-device');
+			var intro = device
+				? 'This site is served from a ' + device + ' running the Go/chi stack.'
+				: 'This site is served from an Android phone running the Go/chi stack.';
+			var body = '<p>' + intro + '</p><p>' + rows.join('<br>') + '</p>';
+			openModal({ title: 'Battery', body: body });
+		});
+	});
+
 	/* ------------------------------------------------ principles */
 	var principleScroll = $('#principle-scroll');
 	var principleRows = $$('[data-principle-row]', principleScroll);
@@ -647,6 +745,13 @@
 	doc.addEventListener('keydown', function (e) {
 		var target = e.target;
 		if (e.key === 'Escape' && navOpened) toggleNav();
+
+		/* modal */
+		if (e.key === 'Escape' && modalOpen) {
+			e.preventDefault();
+			closeModal();
+			return;
+		}
 
 		/* command palette */
 		if (e.metaKey || e.ctrlKey || e.altKey) return;

@@ -30,7 +30,7 @@ var cssFiles = []string{
 	"components.css",
 	"prose.css",
 	"animations.css",
-	"breakdowns.css",
+	"breakpoints.css",
 	"utilities.css",
 }
 
@@ -79,6 +79,7 @@ var funcMap = template.FuncMap{
 		}
 		return t.Format("January 2, 2006")
 	},
+	"deviceModel": battery.DeviceModel,
 	"batteryIcon": func(pct int, charging bool) string {
 		switch {
 		case charging:
