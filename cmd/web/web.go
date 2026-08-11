@@ -164,7 +164,7 @@ func (a *app) articleHandler(w http.ResponseWriter, r *http.Request) {
 	art := content.FindArticle(slug)
 	if art == nil {
 		a.notFoundHandler(w, r)
-		return
+		a.errorLogger.Print(w, "Article not found")
 	}
 	data := struct {
 		pageData
