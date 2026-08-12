@@ -46,10 +46,12 @@
     /* ------------------------------------------------ theme */
     function toggleTheme() {
         var body = doc.body;
+        body.classList.add('theme-anim');
         var dark = body.classList.contains('theme-dark');
         body.classList.remove('theme-dark', 'theme-light');
         body.classList.add(dark ? 'theme-light' : 'theme-dark');
         storageSet('theme', dark ? 'light' : 'dark');
+        setTimeout(function () { body.classList.remove('theme-anim'); }, 320);
     }
 
     /* ------------------------------------------------ nav menu */

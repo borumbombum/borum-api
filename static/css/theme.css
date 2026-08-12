@@ -76,8 +76,10 @@
     color: black;
     background: white;
 }
-.theme-dark {
+body.theme-anim {
     transition: background 300ms;
+}
+.theme-dark {
     --background: black;
     --high-background: rgb(27, 27, 27);
     --high-background-gradient: linear-gradient(90deg, rgba(0, 0, 0, 1), rgba(0, 0, 0, 0.69)), var(--noise-image);
