@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/borumbombum/borum-api/internal/battery"
@@ -21,6 +22,20 @@ import (
 
 // templateDir is relative to the working directory (repo root).
 const templateDir = "cmd/web/templates"
+
+// readVersion returns the app version from the VERSION file at the repo root,
+// falling back to "dev" when it cannot be read.
+func readVersion() string {
+	b, err := os.ReadFile("VERSION")
+	if err != nil {
+		return "dev"
+	}
+	v := strings.TrimSpace(string(b))
+	if v == "" {
+		return "dev"
+	}
+	return v
+}
 
 // cssFiles is the cascade order of the split stylesheet subsets, matching the
 // original single stylesheet: theme (variables/theme) first, utilities last.
@@ -56,6 +71,13 @@ func concatCSS() ([]byte, error) {
 type pageData struct {
 	ActiveNav string
 	Battery   battery.Snapshot
+	Version   string
+}
+
+// newPageData builds the shared view model for a page with the given active
+// nav entry, carrying the app version so the footer can show it.
+func (a *app) newPageData(active string) pageData {
+	return pageData{ActiveNav: active, Battery: battery.Current(), Version: a.version}
 }
 
 // pageTemplates maps a page key to its parsed template set. Each page is
@@ -144,7 +166,7 @@ func (a *app) homeHandler(w http.ResponseWriter, r *http.Request) {
 		Tags       []string
 		Principles []content.Principle
 	}{
-		pageData:   pageData{ActiveNav: "home", Battery: battery.Current()},
+		pageData:   a.newPageData("home"),
 		Articles:   arts,
 		Tags:       allTags(content.Articles()),
 		Principles: content.Principles(),
@@ -169,7 +191,7 @@ func (a *app) articleHandler(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		pageData
 		Article *content.Article
-	}{pageData: pageData{ActiveNav: "articles", Battery: battery.Current()}, Article: art}
+	}{pageData: a.newPageData("articles"), Article: art}
 	renderPage(w, http.StatusOK, "article", data)
 }
 
@@ -195,13 +217,13 @@ func (a *app) tagHandler(w http.ResponseWriter, r *http.Request) {
 		pageData
 		Tag      string
 		Articles []content.Article
-	}{pageData: pageData{ActiveNav: "articles", Battery: battery.Current()}, Tag: tag, Articles: filtered}
+	}{pageData: a.newPageData("articles"), Tag: tag, Articles: filtered}
 	renderPage(w, http.StatusOK, "tag", data)
 }
 
 // notFoundHandler is also used as the router's NotFound handler.
 func (a *app) notFoundHandler(w http.ResponseWriter, r *http.Request) {
-	renderPage(w, http.StatusNotFound, "404", nil)
+	renderPage(w, http.StatusNotFound, "404", a.newPageData(""))
 }
 
 // allTags returns the unique tags across the given articles in the order they

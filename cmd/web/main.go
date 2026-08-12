@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/borumbombum/borum-api/internal/battery"
+	"github.com/borumbombum/borum-api/internal/content"
 	"github.com/borumbombum/borum-api/internal/tasks"
 
 	"github.com/joho/godotenv"
@@ -25,12 +26,13 @@ type app struct {
 	srv         *http.Server
 	db          *sql.DB
 	css         []byte
+	version     string
 	errorLogger *log.Logger
 }
 
 func main() {
 	// Initialize the app
-	a := &app{}
+	a := &app{version: readVersion()}
 
 	// Load API routes
 	routes := a.apiRoutes()
@@ -45,6 +47,12 @@ func main() {
 	}
 	a.css = css
 
+	// Articles live in data/articles.json (the same file the command palette
+	// fetches); load them into memory before serving requests.
+	if err := content.LoadArticles("data/articles.json"); err != nil {
+		log.Fatal(err)
+	}
+
 	// get configs
 	apiAddress := flag.StringP("address", "a", "127.0.0.1", "API Address")
 	apiPort := flag.StringP("port", "p", "8091", "API Port")
@@ -57,7 +65,6 @@ func main() {
 	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Llongfile)
 
 	a.errorLogger = errorLog
-
 
 	// Bind the listener before announcing anything, so a port conflict is a
 	// fatal error instead of a process that is alive but serving nothing.

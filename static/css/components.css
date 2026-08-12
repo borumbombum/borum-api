@@ -382,6 +382,40 @@ form input[type="button"] {
     font-size: var(--fs-clamped-200);
     opacity: 0.5;
 }
+.command-results-wrap {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    max-height: 40vh;
+    overflow-y: auto;
+    background: var(--background);
+    border-bottom: 1px solid var(--color-hairline-strong);
+}
+.command-results {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.command-result {
+    padding: 0.45rem 1rem;
+    cursor: pointer;
+    font-family: var(--ff-body);
+    font-size: var(--fs-clamped-300);
+    font-weight: 300;
+    color: var(--foreground-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.command-result:hover,
+.command-result.selected {
+    background: var(--high-background-gradient);
+}
+.command-result.selected {
+    font-style: italic;
+    font-weight: 600;
+}
 
 
 /* ============================================================

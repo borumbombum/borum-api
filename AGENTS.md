@@ -26,3 +26,11 @@
   - `640px` — a smaller tier, used by the `.sm\:inline` utility.
 - If a media query only affects one component, co-locate it in that component's file (e.g. `.article-table` lives in `prose.css`). Put global responsive rules in `breakpoints.css`.
 - Remember the concat order — theme, base, components, prose, animations, breakpoints, utilities — when a rule must win. Equal-specificity rules later in the list win.
+
+# Versioning
+
+- The app version lives in the root `VERSION` file (`x.y.z`) and is shown in the site footer.
+- "bump" / "commit and push" / "push" / "push to remote" / "release" → bump the **patch** version (`0.1.0 → 0.1.1`) **before** committing, and include it in that commit.
+- A plain "commit" (no push) does **not** bump, unless explicitly stated.
+- Always bump **patch** unless the user explicitly asks for minor or major.
+- Always stage all changes with `git add -A` before every commit.

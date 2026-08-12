@@ -23,7 +23,8 @@ cmd/web/handlers.go HTTP handlers as methods on *app (injected dependencies)
 cmd/web/web.go    web site views: template loading, page handlers, shared view model
 cmd/web/templates/ Go templates: base, header, footer, home, article, tag, 404
 cmd/web/server.go startup banner
-internal/content/  site data: articles and principles (Go source)
+data/            site data: articles.json (loaded at startup; served as /data/articles.json for the command palette)
+internal/content/  site data accessors and shapes; principles stay embedded, articles load from data/articles.json
 internal/battery/  system battery snapshot used by the header
 internal/tasks/    minimal in-process scheduler for background jobs
 
