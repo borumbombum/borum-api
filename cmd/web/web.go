@@ -156,7 +156,7 @@ func renderPage(w http.ResponseWriter, status int, name string, data any) {
 
 // homeHandler renders the archive home page.
 func (a *app) homeHandler(w http.ResponseWriter, r *http.Request) {
-	arts := append([]content.Article(nil), content.Articles()...)
+	arts := append([]content.Article(nil), content.Articles(r.Context())...)
 	sort.SliceStable(arts, func(i, j int) bool { return arts[i].Date > arts[j].Date })
 
 	data := struct {
@@ -168,7 +168,7 @@ func (a *app) homeHandler(w http.ResponseWriter, r *http.Request) {
 	}{
 		pageData:   a.newPageData("home"),
 		Articles:   arts,
-		Tags:       allTags(content.Articles()),
+		Tags:       allTags(content.Articles(r.Context())),
 		Principles: content.Principles(),
 	}
 	for i := range arts {
@@ -183,7 +183,7 @@ func (a *app) homeHandler(w http.ResponseWriter, r *http.Request) {
 // articleHandler renders a single blog post.
 func (a *app) articleHandler(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
-	art := content.FindArticle(slug)
+	art := content.FindArticle(r.Context(), slug)
 	if art == nil {
 		a.notFoundHandler(w, r)
 		a.errorLogger.Print(w, "Article not found")
@@ -198,7 +198,7 @@ func (a *app) articleHandler(w http.ResponseWriter, r *http.Request) {
 // tagHandler renders the archive filtered by one tag.
 func (a *app) tagHandler(w http.ResponseWriter, r *http.Request) {
 	tag := chi.URLParam(r, "tag")
-	arts := content.Articles()
+	arts := content.Articles(r.Context())
 	filtered := make([]content.Article, 0, len(arts))
 	for _, art := range arts {
 		for _, t := range art.Tags {

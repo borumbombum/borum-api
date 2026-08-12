@@ -23,8 +23,9 @@ cmd/web/handlers.go HTTP handlers as methods on *app (injected dependencies)
 cmd/web/web.go    web site views: template loading, page handlers, shared view model
 cmd/web/templates/ Go templates: base, header, footer, home, article, tag, 404
 cmd/web/server.go startup banner
-data/            site data: articles.json (loaded at startup; served as /data/articles.json for the command palette)
-internal/content/  site data accessors and shapes; principles stay embedded, articles load from data/articles.json
+internal/db/      schema migrations (embedded SQL, applied at startup, tracked in schema_migrations)
+internal/content/  site data accessors and shapes; articles come from the Turso database via a
+                   60s in-memory cache, principles stay embedded
 internal/battery/  system battery snapshot used by the header
 internal/tasks/    minimal in-process scheduler for background jobs
 

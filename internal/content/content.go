@@ -1,16 +1,16 @@
-// Package content holds the blog and principles data. Articles are loaded
-// from data/articles.json (see LoadArticles); principles live in the generated
-// data_principles.go. This file defines the shapes and the accessor functions.
+// Package content holds the blog and principles data. Articles live in the
+// SQLite (Turso) database and are read through a short-lived in-memory cache
+// (see Init); principles live in the generated data_principles.go. This file
+// defines the shapes and the accessor functions.
 package content
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
-	"os"
+	"sync"
+	"time"
 )
-
-// articles holds the loaded blog posts. Empty until LoadArticles runs at
-// startup; see also the generated principles in data_principles.go.
-var articles []Article
 
 // Article is a single blog post.
 type Article struct {
@@ -20,8 +20,8 @@ type Article struct {
 	Date         string   `json:"date"`
 	Tags         []string `json:"tags"`
 	Excerpt      string   `json:"excerpt"`
-	Image        string   `json:"image"`
-	ImageCaption string   `json:"imageCaption"`
+	Image        string   `json:"image,omitempty"`
+	ImageCaption string   `json:"imageCaption,omitempty"`
 	InitialLove  int      `json:"initialLove"`
 	Star         bool     `json:"star"`
 	Featured     bool     `json:"featured"`
@@ -35,35 +35,84 @@ type Principle struct {
 	Body  string
 }
 
-// Articles returns every imported article.
-func Articles() []Article {
-	return articles
+// cacheTTL is how long a loaded article set stays fresh. Short enough that a
+// manual edit in the database shows up quickly, long enough to keep page loads
+// off the remote database.
+const cacheTTL = time.Minute
+
+// store holds the database handle and the last loaded article set. Reads are
+// served from cache; a fetch happens at most once per cacheTTL.
+var store = struct {
+	mu       sync.Mutex
+	db       *sql.DB
+	articles []Article
+	loadedAt time.Time
+}{}
+
+// Init wires the article store to the database. It must be called once at
+// startup, after Migrate has run, before serving requests.
+func Init(db *sql.DB) {
+	store.mu.Lock()
+	defer store.mu.Unlock()
+	store.db = db
 }
 
-// LoadArticles replaces the in-memory articles with the contents of the JSON
-// file at path. It is called once at startup so the site renders from the same
-// file the client-side command palette reads.
-func LoadArticles(path string) error {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return err
+// Articles returns every article, refreshing from the database when the cache
+// is stale. On a query error it returns the last good set (possibly empty).
+func Articles(ctx context.Context) []Article {
+	store.mu.Lock()
+	defer store.mu.Unlock()
+
+	if store.db != nil && (len(store.articles) == 0 || time.Since(store.loadedAt) > cacheTTL) {
+		if arts, err := queryAll(ctx, store.db); err == nil {
+			store.articles = arts
+			store.loadedAt = time.Now()
+		}
 	}
-	var arts []Article
-	if err := json.Unmarshal(b, &arts); err != nil {
-		return err
-	}
-	articles = arts
-	return nil
+	return store.articles
 }
 
 // FindArticle returns the article with the given slug, or nil.
-func FindArticle(slug string) *Article {
-	for i := range articles {
-		if articles[i].Slug == slug {
-			return &articles[i]
+func FindArticle(ctx context.Context, slug string) *Article {
+	arts := Articles(ctx)
+	for i := range arts {
+		if arts[i].Slug == slug {
+			return &arts[i]
 		}
 	}
 	return nil
+}
+
+// queryAll loads every article row from the database.
+func queryAll(ctx context.Context, db *sql.DB) ([]Article, error) {
+	rows, err := db.QueryContext(ctx, `SELECT slug, title, subtitle, date, tags,
+		excerpt, image, image_caption, initial_love, star, featured, body
+		FROM articles`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var arts []Article
+	for rows.Next() {
+		var (
+			a           Article
+			tags        string
+			star        int
+			featured    int
+		)
+		if err := rows.Scan(&a.Slug, &a.Title, &a.Subtitle, &a.Date, &tags,
+			&a.Excerpt, &a.Image, &a.ImageCaption, &a.InitialLove, &star, &featured, &a.Body); err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal([]byte(tags), &a.Tags); err != nil {
+			a.Tags = nil
+		}
+		a.Star = star != 0
+		a.Featured = featured != 0
+		arts = append(arts, a)
+	}
+	return arts, rows.Err()
 }
 
 // Principles returns every imported principle.

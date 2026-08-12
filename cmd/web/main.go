@@ -14,6 +14,7 @@ import (
 
 	"github.com/borumbombum/borum-api/internal/battery"
 	"github.com/borumbombum/borum-api/internal/content"
+	"github.com/borumbombum/borum-api/internal/db"
 	"github.com/borumbombum/borum-api/internal/tasks"
 
 	"github.com/joho/godotenv"
@@ -47,12 +48,6 @@ func main() {
 	}
 	a.css = css
 
-	// Articles live in data/articles.json (the same file the command palette
-	// fetches); load them into memory before serving requests.
-	if err := content.LoadArticles("data/articles.json"); err != nil {
-		log.Fatal(err)
-	}
-
 	// get configs
 	apiAddress := flag.StringP("address", "a", "127.0.0.1", "API Address")
 	apiPort := flag.StringP("port", "p", "8091", "API Port")
@@ -81,9 +76,16 @@ func main() {
 		log.Fatal("Error loading Turso variables")
 	}
 	// log.Printf("TURSO_TOKEN %v", os.Getenv("TURSO_TOKEN"))
-	db := sql.OpenDB(turso.NewConnector(os.Getenv("TURSO_URL"), os.Getenv("TURSO_TOKEN")))
-	a.db = db
-	defer db.Close()
+	sqlDB := sql.OpenDB(turso.NewConnector(os.Getenv("TURSO_URL"), os.Getenv("TURSO_TOKEN")))
+	a.db = sqlDB
+	defer sqlDB.Close()
+
+	// Apply pending schema migrations, then point the article store at the
+	// database. Both must succeed before the server starts serving.
+	if err := db.Migrate(context.Background(), sqlDB); err != nil {
+		log.Fatal(err)
+	}
+	content.Init(sqlDB)
 
 	// start the server
 	a.srv = &http.Server{
@@ -120,7 +122,7 @@ func main() {
 	<-ctx.Done()
 
 	log.Println("Closing Turso connection...")
-	if err := db.Close(); err != nil {
+	if err := sqlDB.Close(); err != nil {
 		log.Printf("error closing Turso: %v", err)
 	} else {
 		log.Printf("Turso connection closed successfully")

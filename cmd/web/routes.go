@@ -30,6 +30,7 @@ func (a *app) apiRoutes() []apiRoute {
 		{http.MethodGet, "/tags/{tag}", a.tagHandler},
 		{http.MethodGet, "/api/health", a.healthHandler},
 		{http.MethodGet, "/api/v1/cms", a.cmsHandler},
+		{http.MethodGet, "/data/articles.json", a.articlesJSONHandler},
 	}
 }
 
@@ -68,11 +69,6 @@ func router(a *app, routes []apiRoute) http.Handler {
 	r.Handle("/vendor/*", http.StripPrefix("/", fs))
 	r.Handle("/app.js", fs)
 	r.Handle("/favicon.svg", fs)
-
-	// The data folder is served so the client-side command palette can read
-	// data/articles.json directly (the same file the server loads at startup).
-	ds := http.FileServer(http.Dir("data"))
-	r.Handle("/data/*", http.StripPrefix("/data/", ds))
 
 	// /styles.css is the concat of static/css/*.css, computed at startup
 	// (concatCSS in web.go) so the browser gets a single stylesheet.

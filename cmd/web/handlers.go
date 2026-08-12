@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/borumbombum/borum-api/internal/battery"
+	"github.com/borumbombum/borum-api/internal/content"
 )
 
 // healthHandler reports liveness of the API process. It has no data-layer
@@ -46,4 +47,15 @@ func (a *app) healthHandler(w http.ResponseWriter, r *http.Request) {
 func (a *app) cmsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(`{"endpoint":"cms"}`))
+}
+
+// articlesJSONHandler serves the article list as JSON for the client-side
+// command palette, from the database instead of the old data/articles.json
+// file. The shape matches the former file so the palette code is unchanged.
+func (a *app) articlesJSONHandler(w http.ResponseWriter, r *http.Request) {
+	arts := content.Articles(r.Context())
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	if err := json.NewEncoder(w).Encode(arts); err != nil {
+		a.errorLogger.Print(err.Error())
+	}
 }
