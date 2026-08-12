@@ -1045,28 +1045,4 @@
         '.pr-detail-anim{animation:prSlide .3s var(--ease-shizuka, cubic-bezier(.22,1,.36,1)) both;}' +
         '@keyframes prSlide{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}';
     doc.head.appendChild(style);
-
-    /* ------------------------------------------------ view transitions */
-    doc.addEventListener('click', function (e) {
-        var a = null;
-        if (e.target && e.target.closest) a = e.target.closest('a');
-        if (!a) return;
-        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.defaultPrevented) return;
-        var url;
-        try {
-            url = new URL(a.href);
-        } catch (err) {
-            return;
-        }
-        if (url.origin !== win.location.origin) return;
-        if (url.pathname === win.location.pathname && url.hash) return;
-        e.preventDefault();
-        if (doc.startViewTransition) {
-            doc.startViewTransition(function () {
-                win.location.href = url.href;
-            });
-        } else {
-            win.location.href = url.href;
-        }
-    });
 })();

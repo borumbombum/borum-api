@@ -30,7 +30,7 @@ internal/tasks/    minimal in-process scheduler for background jobs
 
 ## Styling
 
-The site uses plain CSS — no Tailwind, no build step, no runtime. Styles are
+The site uses plain CSS. Styles are
 split into subject files under `static/css/` for editing, then concatenated in
 cascade order at server startup and served as a single `/styles.css` by
 `concatCSS()` in `cmd/web/web.go`. The browser makes one CSS request; edits to

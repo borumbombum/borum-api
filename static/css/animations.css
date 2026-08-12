@@ -85,12 +85,3 @@
         animation: none;
     }
 }
-
-@view-transition {
-    navigation: auto;
-}
-::view-transition-old(root),
-::view-transition-new(root) {
-    animation-duration: 0.45s;
-    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-}
