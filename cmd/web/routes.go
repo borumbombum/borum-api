@@ -5,7 +5,6 @@ package main
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -44,18 +43,6 @@ func router(a *app, routes []apiRoute) http.Handler {
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders: []string{"*"},
 	}))
-
-	// 4-hour client-side cache for everything except the API and the articles
-	// JSON (the palette reads it, so it should stay fresh).
-	r.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			p := r.URL.Path
-			if !strings.HasPrefix(p, "/api/") && p != "/data/articles.json" {
-				w.Header().Set("Cache-Control", "public, max-age=14400")
-			}
-			next.ServeHTTP(w, r)
-		})
-	})
 
 	// Register all routes
 	for _, rt := range routes {

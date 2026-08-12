@@ -96,6 +96,57 @@
     var paletteSelected = 0;
     var paletteResultsEl = null;
 
+    var paletteCommands = [
+        {
+            hint: ':help \u2014 show this command list',
+            match: function (v) { return v === ':help'; },
+            run: function () {
+                var items = paletteCommands.map(function (c) {
+                    return '<li><code>' + c.hint + '</code></li>';
+                }).join('');
+                items += '<li><code>Type 2+ characters to search article titles (\u2191\u2193 navigate, Enter opens)</code></li>';
+                openModal({
+                    title: 'Commands',
+                    body: '<div class="font-mono text-sm md:text-xs"><ul class="space-y-1">' + items + '</ul></div>'
+                });
+            }
+        },
+        {
+            hint: ':q \u2014 close the palette',
+            match: function (v) { return v === ':q'; },
+            instant: true,
+            run: closePalette
+        },
+        {
+            hint: 'home \u2014 go to the home page',
+            match: function (v) { return v.toLowerCase() === 'home'; },
+            run: function () {
+                doc.location.href = '/';
+                closePalette();
+            }
+        },
+        {
+            hint: '#5 \u2014 jump to principle 5',
+            match: function (v) { return /^#\d+$/.test(v); },
+            run: function () {
+                var n = Number(/^#(\d+)$/.exec((paletteValue || '').trim())[1]);
+                if (doc.location.pathname === '/') {
+                    openPrinciple(n);
+                    setPrincipleHash(n);
+                } else {
+                    doc.location.href = '/#pr-' + pad(n);
+                }
+                closePalette();
+            }
+        }
+    ];
+    function matchPaletteCommand(value) {
+        for (var i = 0; i < paletteCommands.length; i++) {
+            if (paletteCommands[i].match(value)) return paletteCommands[i];
+        }
+        return null;
+    }
+
     function loadPaletteArticles() {
         if (paletteArticles !== null) return;
         paletteArticles = [];
@@ -140,10 +191,15 @@
         if (!paletteInput) return;
         var value = (paletteValue || '').trim();
         var hint = $('.command-hint', paletteRoot);
-        if (/^#\d*$/.test(value)) {
+        var cmd = matchPaletteCommand(value);
+        if (cmd) {
+            if (cmd.instant) {
+                cmd.run();
+                return;
+            }
             paletteResults = [];
             paletteSelected = 0;
-            if (hint) hint.textContent = 'Jump to a principle (#5)';
+            if (hint) hint.textContent = cmd.hint + ' \u00b7 enter';
         } else if (value.length >= 2) {
             paletteResults = searchArticles(value);
             paletteSelected = Math.max(0, Math.min(paletteSelected, paletteResults.length - 1));
@@ -214,16 +270,9 @@
     }
     function runCommand() {
         var value = (paletteValue || '').trim();
-        var m = /^#(\d+)$/.exec(value);
-        if (m) {
-            var n = Number(m[1]);
-            if (doc.location.pathname === '/') {
-                openPrinciple(n);
-                setPrincipleHash(n);
-            } else {
-                doc.location.href = '/#pr-' + pad(n);
-            }
-            closePalette();
+        var cmd = matchPaletteCommand(value);
+        if (cmd) {
+            cmd.run();
             return;
         }
         var art = paletteResults[paletteSelected];
@@ -845,7 +894,7 @@
             openPalette();
             return;
         }
-        if (paletteOpen) {
+        if (paletteOpen && !modalOpen) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 runCommand();

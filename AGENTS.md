@@ -10,6 +10,8 @@
 - Use short paragraphs and lists to break up dense information.
 - If precision and natural phrasing conflict, precision wins.
 
+- IMPORTANT: We need to keep things simple and efficient. Create reusable effcient code whenever possible, following the Twelve-Factor App methodology.
+
 # DB
 
 - Concurrent writes are safe: `*sql.DB` is thread-safe and pools connections.
