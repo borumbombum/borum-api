@@ -25,7 +25,8 @@ cmd/web/templates/ Go templates: base, header, footer, home, article, tag, 404
 cmd/web/server.go startup banner
 internal/db/      schema migrations (embedded SQL, applied at startup, tracked in schema_migrations)
 internal/content/  site data accessors and shapes; articles come from the Turso database via a
-                   60s in-memory cache, principles stay embedded
+                    61-minute in-memory cache (per-article cache capped at ~30MB, LRU eviction),
+                    principles stay embedded
 internal/battery/  system battery snapshot used by the header
 internal/tasks/    minimal in-process scheduler for background jobs
 

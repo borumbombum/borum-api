@@ -49,13 +49,14 @@ func (a *app) cmsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"endpoint":"cms"}`))
 }
 
-// articlesJSONHandler serves the article list as JSON for the client-side
-// command palette, from the database instead of the old data/articles.json
-// file. The shape matches the former file so the palette code is unchanged.
+// articlesJSONHandler serves the minimal article data (slug, title, tags) for
+// the client-side command palette, from the database. The result is cached
+// server-side (see content.Palette) and served from the same /data/articles.json
+// URL the palette has always fetched.
 func (a *app) articlesJSONHandler(w http.ResponseWriter, r *http.Request) {
-	arts := content.Articles(r.Context())
+	items := content.Palette(r.Context())
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	if err := json.NewEncoder(w).Encode(arts); err != nil {
+	if err := json.NewEncoder(w).Encode(items); err != nil {
 		a.errorLogger.Print(err.Error())
 	}
 }

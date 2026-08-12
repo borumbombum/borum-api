@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
@@ -156,19 +155,17 @@ func renderPage(w http.ResponseWriter, status int, name string, data any) {
 
 // homeHandler renders the archive home page.
 func (a *app) homeHandler(w http.ResponseWriter, r *http.Request) {
-	arts := append([]content.Article(nil), content.Articles(r.Context())...)
-	sort.SliceStable(arts, func(i, j int) bool { return arts[i].Date > arts[j].Date })
-
+	arts := content.List(r.Context())
 	data := struct {
 		pageData
-		Featured   *content.Article
-		Articles   []content.Article
+		Featured   *content.ArticleSummary
+		Articles   []content.ArticleSummary
 		Tags       []string
 		Principles []content.Principle
 	}{
 		pageData:   a.newPageData("home"),
 		Articles:   arts,
-		Tags:       allTags(content.Articles(r.Context())),
+		Tags:       allTags(arts),
 		Principles: content.Principles(),
 	}
 	for i := range arts {
@@ -183,10 +180,10 @@ func (a *app) homeHandler(w http.ResponseWriter, r *http.Request) {
 // articleHandler renders a single blog post.
 func (a *app) articleHandler(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
-	art := content.FindArticle(r.Context(), slug)
+	art := content.GetArticle(r.Context(), slug)
 	if art == nil {
 		a.notFoundHandler(w, r)
-		a.errorLogger.Print(w, "Article not found")
+		return
 	}
 	data := struct {
 		pageData
@@ -198,8 +195,8 @@ func (a *app) articleHandler(w http.ResponseWriter, r *http.Request) {
 // tagHandler renders the archive filtered by one tag.
 func (a *app) tagHandler(w http.ResponseWriter, r *http.Request) {
 	tag := chi.URLParam(r, "tag")
-	arts := content.Articles(r.Context())
-	filtered := make([]content.Article, 0, len(arts))
+	arts := content.List(r.Context())
+	filtered := make([]content.ArticleSummary, 0, len(arts))
 	for _, art := range arts {
 		for _, t := range art.Tags {
 			if t == tag {
@@ -212,11 +209,10 @@ func (a *app) tagHandler(w http.ResponseWriter, r *http.Request) {
 		a.notFoundHandler(w, r)
 		return
 	}
-	sort.SliceStable(filtered, func(i, j int) bool { return filtered[i].Date > filtered[j].Date })
 	data := struct {
 		pageData
 		Tag      string
-		Articles []content.Article
+		Articles []content.ArticleSummary
 	}{pageData: a.newPageData("articles"), Tag: tag, Articles: filtered}
 	renderPage(w, http.StatusOK, "tag", data)
 }
@@ -228,7 +224,7 @@ func (a *app) notFoundHandler(w http.ResponseWriter, r *http.Request) {
 
 // allTags returns the unique tags across the given articles in the order they
 // first appear, matching the static-port reference tag cloud.
-func allTags(arts []content.Article) []string {
+func allTags(arts []content.ArticleSummary) []string {
 	seen := map[string]bool{}
 	var tags []string
 	for _, art := range arts {
