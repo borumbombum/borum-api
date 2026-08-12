@@ -92,44 +92,89 @@
     var paletteInput = null;
     var paletteValue = '';
     var paletteArticles = null;
+    var paletteTags = [];
     var paletteResults = [];
     var paletteSelected = 0;
     var paletteResultsEl = null;
 
     var paletteCommands = [
         {
-            hint: ':help \u2014 show this command list',
-            match: function (v) { return v === ':help'; },
+            hint: ':help / :h \u2014 show command list',
+            keys: [':help', ':h'],
+            match: function (v) { return v === ':help' || v === ':h'; },
             run: function () {
                 var items = paletteCommands.map(function (c) {
-                    return '<li><code>' + c.hint + '</code></li>';
+                    return '<li>' + c.hint + '</li>';
                 }).join('');
-                items += '<li><code>Type 2+ characters to search article titles (\u2191\u2193 navigate, Enter opens)</code></li>';
+                items += paletteModes.map(function (m) {
+                    return '<li>' + m.hint + '</li>';
+                }).join('');
                 openModal({
                     title: 'Commands',
-                    body: '<div class="font-mono text-sm md:text-xs"><ul class="space-y-1">' + items + '</ul></div>'
+                    body: '<div class="font-mono text-[11px] md:text-[10px]"><ul class="space-y-1">' + items + '</ul></div>'
                 });
             }
         },
         {
+            hint: ':toggleimgs \u2014 toggle images on/off',
+            keys: [':toggleimgs'],
+            match: function (v) { return v.toLowerCase() === ':toggleimgs'; },
+            run: function () {
+                var body = doc.body;
+                var on = body.classList.contains('no-images');
+                body.classList.toggle('no-images', !on);
+                storageSet('noimages', on ? '0' : '1');
+            }
+        },
+        {
+            hint: ':nostr [nprofile] \u2014 open Nostr profile',
+            keys: [':nostr'],
+            match: function (v) { return /^:nostr(\s+\S+)?$/.test(v); },
+            run: function () {
+                var rest = (paletteValue || '').trim().slice(':nostr'.length).trim();
+                var url = rest
+                    ? 'https://primal.net/p/' + encodeURIComponent(rest)
+                    : 'https://primal.net/p/nprofile1qqs8wftkcz9achdy8ascqtnk0v3rrcevda2klm8wqyd6xrlk8skc22gekra89';
+                window.open(url, '_blank', 'noopener');
+                closePalette();
+            }
+        },
+        {
             hint: ':q \u2014 close the palette',
+            keys: [':q'],
             match: function (v) { return v === ':q'; },
             instant: true,
             run: closePalette
         },
         {
-            hint: 'home \u2014 go to the home page',
-            match: function (v) { return v.toLowerCase() === 'home'; },
+            hint: ':home \u2014 go to the home page',
+            keys: [':home'],
+            match: function (v) { return v.toLowerCase() === ':home'; },
             run: function () {
                 doc.location.href = '/';
                 closePalette();
             }
         },
         {
-            hint: '#5 \u2014 jump to principle 5',
-            match: function (v) { return /^#\d+$/.test(v); },
+            hint: ':raft \u2014 go home and scroll to the article list',
+            keys: [':raft'],
+            match: function (v) { return v.toLowerCase() === ':raft'; },
             run: function () {
-                var n = Number(/^#(\d+)$/.exec((paletteValue || '').trim())[1]);
+                if (doc.location.pathname === '/') {
+                    var el = doc.getElementById('main');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    doc.location.href = '/#main';
+                }
+                closePalette();
+            }
+        },
+        {
+            hint: ':#5 \u2014 jump to principle 5',
+            keys: [':#5'],
+            match: function (v) { return /^:?#\d+$/.test(v); },
+            run: function () {
+                var n = Number(/^:?#(\d+)$/.exec((paletteValue || '').trim())[1]);
                 if (doc.location.pathname === '/') {
                     openPrinciple(n);
                     setPrincipleHash(n);
@@ -147,6 +192,32 @@
         return null;
     }
 
+    var paletteModes = [
+        {
+            hint: 'Type #tag to search tags (\u2191\u2193 navigate, Enter opens)',
+            test: function (v) { return /^:?#/.test(v); },
+            search: function (v) {
+                var q = v.replace(/^:?#/, '').toLowerCase();
+                return paletteTags.filter(function (t) {
+                    return t.toLowerCase().indexOf(q) === 0;
+                }).map(function (t) {
+                    return { title: '#' + t, slug: t, tag: true };
+                });
+            }
+        },
+        {
+            hint: 'Type 2+ characters to search article titles (\u2191\u2193 navigate, Enter opens)',
+            test: function (v) {
+                var s = v.charAt(0) === ':' ? v.slice(1) : v;
+                return s.length >= 2;
+            },
+            search: function (v) {
+                var s = v.charAt(0) === ':' ? v.slice(1) : v;
+                return searchArticles(s);
+            }
+        }
+    ];
+
     function loadPaletteArticles() {
         if (paletteArticles !== null) return;
         paletteArticles = [];
@@ -157,6 +228,17 @@
             })
             .then(function (data) {
                 paletteArticles = Array.isArray(data) ? data : [];
+                var seen = {};
+                paletteTags = [];
+                paletteArticles.forEach(function (a) {
+                    (a.tags || []).forEach(function (t) {
+                        if (!seen[t]) {
+                            seen[t] = true;
+                            paletteTags.push(t);
+                        }
+                    });
+                });
+                paletteTags.sort(function (a, b) { return a.localeCompare(b); });
                 updatePalette();
             })
             .catch(function () {
@@ -190,7 +272,6 @@
     function updatePalette() {
         if (!paletteInput) return;
         var value = (paletteValue || '').trim();
-        var hint = $('.command-hint', paletteRoot);
         var cmd = matchPaletteCommand(value);
         if (cmd) {
             if (cmd.instant) {
@@ -199,15 +280,15 @@
             }
             paletteResults = [];
             paletteSelected = 0;
-            if (hint) hint.textContent = cmd.hint + ' \u00b7 enter';
-        } else if (value.length >= 2) {
-            paletteResults = searchArticles(value);
-            paletteSelected = Math.max(0, Math.min(paletteSelected, paletteResults.length - 1));
-            if (hint) hint.textContent = paletteResults.length + ' article' + (paletteResults.length === 1 ? '' : 's') + ' \u00b7 \u2191\u2193 navigate \u00b7 enter to open';
         } else {
             paletteResults = [];
-            paletteSelected = 0;
-            if (hint) hint.textContent = 'Jump to a principle (#5) or search articles';
+            for (var i = 0; i < paletteModes.length; i++) {
+                if (paletteModes[i].test(value)) {
+                    paletteResults = paletteModes[i].search(value);
+                    break;
+                }
+            }
+            paletteSelected = Math.max(0, Math.min(paletteSelected, paletteResults.length - 1));
         }
         renderPaletteResults();
     }
@@ -226,10 +307,6 @@
         bar.setAttribute('role', 'dialog');
         bar.setAttribute('aria-label', 'Command line');
 
-        var prompt = doc.createElement('span');
-        prompt.className = 'command-prompt';
-        prompt.textContent = '/';
-
         var input = doc.createElement('input');
         input.type = 'text';
         input.className = 'command-input';
@@ -244,19 +321,19 @@
 
         var hint = doc.createElement('span');
         hint.className = 'command-hint';
-        hint.textContent = 'Jump to a principle (#5) or search articles';
+        hint.textContent = matchPaletteCommand(':help').hint;
 
         var results = doc.createElement('div');
         results.className = 'command-results-wrap';
         paletteResultsEl = results;
 
-        bar.appendChild(prompt);
         bar.appendChild(input);
         bar.appendChild(hint);
         bar.appendChild(results);
         paletteRoot.appendChild(bar);
         paletteInput = input;
-        paletteValue = '';
+        paletteValue = ':';
+        input.value = ':';
         input.focus();
         loadPaletteArticles();
     }
@@ -273,11 +350,17 @@
         var cmd = matchPaletteCommand(value);
         if (cmd) {
             cmd.run();
+            paletteValue = '';
+            closePalette();
             return;
         }
         var art = paletteResults[paletteSelected];
         if (art && art.slug) {
-            doc.location.href = '/blog/' + art.slug;
+            if (art.tag) {
+                doc.location.href = '/tags/' + encodeURIComponent(art.slug);
+            } else {
+                doc.location.href = '/blog/' + art.slug;
+            }
             closePalette();
         }
     }
@@ -285,6 +368,25 @@
         if (!paletteResults.length) return;
         paletteSelected = (paletteSelected + delta + paletteResults.length) % paletteResults.length;
         renderPaletteResults();
+    }
+    function completePalette() {
+        if (!paletteInput) return;
+        var value = (paletteValue || '').trim();
+        if (value.length <= 1) return;
+        var lower = value.toLowerCase();
+        for (var i = 0; i < paletteCommands.length; i++) {
+            var keys = paletteCommands[i].keys;
+            if (!keys) continue;
+            for (var j = 0; j < keys.length; j++) {
+                if (keys[j].toLowerCase().indexOf(lower) === 0) {
+                    paletteValue = keys[j];
+                    paletteInput.value = keys[j];
+                    paletteInput.setSelectionRange(keys[j].length, keys[j].length);
+                    updatePalette();
+                    return;
+                }
+            }
+        }
     }
 
     /* ------------------------------------------------ modal */
@@ -564,9 +666,6 @@
     function paintLove(btn, state, popping) {
         btn.classList.toggle('liked', state.liked);
         btn.setAttribute('aria-pressed', String(state.liked));
-        btn.classList.toggle('border-hairline-strong', !state.liked);
-        btn.classList.toggle('hover:border-[#dc3545]/50', !state.liked);
-        btn.classList.toggle('border-[#dc3545]/40', state.liked);
         btn.classList.toggle('bg-[#dc3545]/5', state.liked);
         if (popping) {
             btn.classList.remove('animate-pop');
@@ -574,18 +673,19 @@
             btn.classList.add('animate-pop');
             setTimeout(function () { btn.classList.remove('animate-pop'); }, 450);
         }
+        var gray = !state.liked && state.count === 0;
         var svg = btn.querySelector('svg');
         if (svg) {
-            svg.classList.toggle('text-ink-soft', !state.liked);
+            svg.classList.toggle('text-ink-soft', gray);
             svg.setAttribute('fill', state.liked ? '#dc3545' : 'none');
-            svg.setAttribute('stroke', state.liked ? '#dc3545' : 'currentColor');
-            svg.setAttribute('color', state.liked ? '#dc3545' : 'currentColor');
+            svg.setAttribute('stroke', gray ? 'currentColor' : '#dc3545');
+            svg.setAttribute('color', gray ? 'currentColor' : '#dc3545');
         }
         var countEl = btn.querySelector('[data-count]');
         if (countEl) {
             countEl.textContent = String(state.count);
-            countEl.classList.toggle('text-ink-soft', !state.liked);
-            countEl.classList.toggle('text-[#dc3545]', state.liked);
+            countEl.classList.toggle('text-ink-soft', gray);
+            countEl.classList.toggle('text-[#dc3545]', !gray);
         }
     }
     function wireLove(btn) {
@@ -889,7 +989,7 @@
 
         /* command palette */
         if (e.metaKey || e.ctrlKey || e.altKey) return;
-        if (e.key === '/' && !paletteOpen && !isTypingTarget(target)) {
+        if (e.key === ':' && !paletteOpen && !isTypingTarget(target)) {
             e.preventDefault();
             openPalette();
             return;
@@ -901,6 +1001,9 @@
             } else if (e.key === 'Escape') {
                 e.preventDefault();
                 closePalette();
+            } else if (e.key === 'Tab') {
+                e.preventDefault();
+                completePalette();
             } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 paletteSelect(1);

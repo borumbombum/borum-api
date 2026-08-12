@@ -267,6 +267,12 @@ form input[type="button"] {
 .archive a {
     border-bottom: 0;
 }
+#main {
+    scroll-margin-top: 20px;
+}
+body.no-images img {
+    display: none !important;
+}
 
 
 /* ============================================================
