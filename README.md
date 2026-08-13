@@ -87,11 +87,14 @@ signup). Credentials come from the environment:
 
 - `ADMIN_EMAIL` — the only email that may log in.
 - `ADMIN_PASSWORD_HASH` — a **bcrypt hash** of the password, not the password
-  itself. Generate it once with htpasswd (or any bcrypt tool):
+  itself. Generate it once with the repo's helper:
 
-      htpasswd -bnBC 10 "" 'your-password' | tr -d ':\n'
+      go run ./cmd/hashpass 'your-password'
 
-  Copy the whole `$2a$...` string into `.env`.
+  Copy the whole `$2a$...` string into `.env` **wrapped in single quotes** —
+  unquoted, the `$` characters are read as variable references and silently
+  stripped, which makes every login fail. Any bcrypt tool works; the helper
+  reads from stdin too (keeps the password out of shell history).
 - `SESSION_TTL_HOURS` — optional session lifetime in hours (default 30 days).
 
 Sessions are stored in the `sessions` table (only SHA-256 token hashes; the

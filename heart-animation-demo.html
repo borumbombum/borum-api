@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Heart pop + particle burst demo</title>
+<style>
+    /* ---- page chrome (demo only) ---- */
+    body {
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        margin: 0;
+        background: #111;
+        font-family: monospace;
+    }
+
+    /* ---- isolated heart-button animation ---- */
+
+    /* container: lets the scaled icon breathe outside the button */
+    .heart-btn {
+        position: relative;
+        overflow: visible;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 9999px;
+        border: 1px solid rgba(220, 53, 69, 0.4);
+        padding: 6px 12px;
+        font-family: monospace;
+        font-size: 12px;
+        letter-spacing: 0.05em;
+        color: #e7e7e7;
+        background: transparent;
+        transition: transform 0.2s ease;
+    }
+    .heart-btn:hover {
+        transform: scale(1.08);
+    }
+
+    /* elastic bounce curve + smooth rest of the icon */
+    .heart-btn svg {
+        width: 16px;
+        height: 16px;
+        fill: none;
+        stroke: #dc3545;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    /* the pop: overshoot 1.35 -> 0.9 -> 1.2 -> settle */
+    .heart-btn.go svg {
+        animation: heartPop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes heartPop {
+        0%   { transform: scale(1); }
+        15%  { transform: scale(1.35); }
+        30%  { transform: scale(0.9); }
+        45%  { transform: scale(1.2); }
+        60%  { transform: scale(1); }
+    }
+
+    /* particle burst dots */
+    .heart-particle {
+        position: fixed;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 9999;
+        animation: heartParticleBurst 0.7s ease-out forwards;
+    }
+    @keyframes heartParticleBurst {
+        0%   { opacity: 1; transform: translate(0, 0) scale(1); }
+        100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0); }
+    }
+</style>
+</head>
+<body>
+    <button type="button" class="heart-btn" id="demo-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/></svg>
+        <span>love</span>
+    </button>
+
+<script>
+    /* ---- isolated burst: 10 dots fanning out from (x, y) ---- */
+    var PARTICLE_COLORS = ['#dc3545', '#ff6b81', '#ff9aa8', '#c81e3a'];
+
+    function burst(x, y) {
+        var count = 10;
+        for (var i = 0; i < count; i++) {
+            var el = document.createElement('span');
+            el.className = 'heart-particle';
+            var angle = (Math.PI * 2 * i) / count + Math.random() * 0.4;
+            var distance = 32 + Math.random() * 40;
+            el.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
+            el.style.setProperty('--ty', Math.sin(angle) * distance - 10 + 'px');
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            el.style.background = PARTICLE_COLORS[i % PARTICLE_COLORS.length];
+            document.body.appendChild(el);
+            (function (node) {
+                setTimeout(function () {
+                    if (node && node.parentNode) node.parentNode.removeChild(node);
+                }, 700);
+            })(el);
+        }
+    }
+
+    /* ---- trigger ---- */
+    /* Optional "liked" fill toggle would live here, e.g.:
+       btn.classList.toggle('liked');
+       btn.querySelector('svg').style.fill = 'rgba(220,53,69,.25)'; */
+    var btn = document.getElementById('demo-btn');
+    btn.addEventListener('click', function () {
+        /* restart the pop (reflow trick lets rapid clicks replay it) */
+        btn.classList.remove('go');
+        void btn.offsetWidth;
+        btn.classList.add('go');
+        setTimeout(function () { btn.classList.remove('go'); }, 450);
+
+        /* burst from the button center */
+        var rect = btn.getBoundingClientRect();
+        burst(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    });
+</script>
+</body>
+</html>

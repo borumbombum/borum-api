@@ -22,7 +22,8 @@ func (a *app) loginPageHandler(w http.ResponseWriter, r *http.Request) {
 
 // loginHandler checks the submitted email/password, rate-limited per client,
 // and on success issues the session cookie. Failures are generic so the page
-// cannot be probed for valid emails.
+// cannot be probed for valid emails; the real reason is written to the server
+// log (never the password) for the owner to debug.
 func (a *app) loginHandler(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -30,6 +31,7 @@ func (a *app) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !a.auth.AllowLogin(r.RemoteAddr + "|" + req.Email) {
+		a.errorLogger.Printf("login rate-limited for %q from %s", req.Email, r.RemoteAddr)
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": "too many attempts, slow down"})
 		return
 	}
@@ -39,6 +41,7 @@ func (a *app) loginHandler(w http.ResponseWriter, r *http.Request) {
 		Password: req.Password,
 	})
 	if err != nil {
+		a.errorLogger.Printf("login failed for %q from %s: %v", req.Email, r.RemoteAddr, err)
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid credentials"})
 		return
 	}

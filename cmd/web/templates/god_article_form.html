@@ -59,11 +59,20 @@
                 <input name="featured" type="checkbox" {{if .Article.Featured}}checked{{end}} class="accent-black dark:accent-white" /> featured
             </label>
         </div>
-        <label class="flex flex-col gap-1 font-mono text-[13px] text-ink-soft">
+        <label class="flex flex-col gap-1 font-mono text-[13px] text-ink-soft" for="body-editor">
             body (html)
-            <textarea name="body" rows="20" class="w-full border border-hairline bg-transparent p-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none">{{.Article.Body}}</textarea>
         </label>
+        <div class="editor-shell">
+            <div class="editor-toolbar sticky top-0 z-10 bg-[color:var(--background)]"></div>
+            <div data-editor="body-editor" class="article prose-diary"></div>
+            <textarea name="body" id="body-editor" rows="20" class="hidden w-full border border-hairline bg-transparent p-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none">{{.Article.Body}}</textarea>
+        </div>
+        <p class="font-mono text-[11px] text-ink-soft">html is normalized on save; use the html toggle for tables or custom markup</p>
         <button type="submit" class="btn btn-primary btn-sm self-start">save</button>
     </form>
 </main>
+{{end}}
+{{define "page_scripts"}}
+<script src="/vendor/tiptap/tiptap.bundle.js"></script>
+<script src="/god-editor.js"></script>
 {{end}}

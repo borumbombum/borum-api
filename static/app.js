@@ -39,8 +39,14 @@
     }
 
     /* ------------------------------------------------ lucide icons */
-    if (win.lucide && win.lucide.createIcons) {
-        win.lucide.createIcons();
+    function mountIcons() {
+        if (win.lucide && win.lucide.createIcons) {
+            win.lucide.createIcons();
+        }
+    }
+    mountIcons();
+    if (doc.readyState === 'loading') {
+        doc.addEventListener('DOMContentLoaded', mountIcons);
     }
 
     /* ------------------------------------------------ theme */
@@ -51,6 +57,11 @@
         body.classList.remove('theme-dark', 'theme-light');
         body.classList.add(dark ? 'theme-light' : 'theme-dark');
         storageSet('theme', dark ? 'light' : 'dark');
+        var themeIcon = $('.theme-toggle [data-lucide]');
+        if (themeIcon) {
+            themeIcon.setAttribute('data-lucide', dark ? 'sun' : 'moon');
+            if (win.lucide && win.lucide.createIcons) win.lucide.createIcons();
+        }
         setTimeout(function () { body.classList.remove('theme-anim'); }, 320);
     }
 
@@ -69,7 +80,11 @@
         if (!navEl) return;
         navEl.setAttribute('data-opened', String(navOpened));
         if (navToggle) {
-            navToggle.classList.toggle('cross', navOpened);
+            var navIcon = navToggle.querySelector('[data-lucide]');
+            if (navIcon) {
+                navIcon.setAttribute('data-lucide', navOpened ? 'x' : 'menu');
+                if (win.lucide && win.lucide.createIcons) win.lucide.createIcons();
+            }
             navToggle.setAttribute('aria-expanded', String(navOpened));
         }
         setNavAnim(navOpened ? 'nav-open-anim' : 'nav-close-anim');

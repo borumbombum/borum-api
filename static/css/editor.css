@@ -1,0 +1,99 @@
+/* ============================================================
+   TipTap article body editor (god edit form)
+   ============================================================ */
+.editor-shell {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--color-hairline);
+}
+
+.editor-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px;
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--color-hairline);
+}
+
+.editor-toolbar button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem;
+    line-height: 0;
+    color: var(--color-muted);
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.editor-toolbar button:hover {
+    color: var(--foreground-text);
+}
+
+.editor-toolbar button.is-active {
+    color: var(--foreground-text);
+    background: var(--high-background-gradient);
+}
+
+.editor-toolbar-sep {
+    align-self: stretch;
+    width: 1px;
+    margin: 0.25rem 0.375rem;
+    background: var(--color-hairline);
+}
+
+.editor-shell .ProseMirror {
+    min-height: 24rem;
+    padding: 1rem;
+    cursor: text;
+}
+
+.editor-shell .ProseMirror:focus {
+    outline: none;
+}
+
+.editor-shell .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+    color: var(--color-muted);
+}
+
+.editor-shell .ProseMirror img {
+    max-width: 100%;
+    height: auto;
+}
+
+.editor-shell .ProseMirror img.ProseMirror-selectednode {
+    outline: 2px solid var(--foreground-text);
+}
+
+.editor-shell .ProseMirror pre {
+    margin-top: 1rem;
+    padding: 1rem;
+    overflow-x: auto;
+    background: var(--high-background-gradient);
+    border-radius: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+}
+
+.editor-shell .ProseMirror code {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+}
+
+.editor-shell .ProseMirror pre code {
+    padding: 0;
+    background: none;
+}
+
+.editor-shell .ProseMirror hr {
+    margin: 1.5rem 0;
+    border: none;
+    border-top: 1px solid var(--color-hairline);
+}

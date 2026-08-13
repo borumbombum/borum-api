@@ -3,6 +3,18 @@
 (function () {
     'use strict';
     var doc = document;
+    var win = window;
+
+    /* ------------------------------------------------ lucide icons */
+    function mountIcons() {
+        if (win.lucide && win.lucide.createIcons) {
+            win.lucide.createIcons();
+        }
+    }
+    mountIcons();
+    if (doc.readyState === 'loading') {
+        doc.addEventListener('DOMContentLoaded', mountIcons);
+    }
 
     /* ------------------------------------------------ drawer */
     var drawer = doc.querySelector('[data-drawer]');
@@ -10,17 +22,17 @@
 
     function closeDrawer() {
         if (!drawer) return;
-        drawer.classList.add('-translate-x-full');
-        if (backdrop) backdrop.classList.add('hidden');
+        drawer.style.transform = 'translateX(-100%)';
+        if (backdrop) backdrop.hidden = true;
     }
 
     doc.querySelectorAll('[data-drawer-toggle]').forEach(function (btn) {
         btn.addEventListener('click', function () {
-            if (drawer.classList.contains('-translate-x-full')) {
-                drawer.classList.remove('-translate-x-full');
-                if (backdrop) backdrop.classList.remove('hidden');
-            } else {
+            if (drawer.style.transform === 'translateX(0%)') {
                 closeDrawer();
+            } else {
+                drawer.style.transform = 'translateX(0%)';
+                if (backdrop) backdrop.hidden = false;
             }
         });
     });

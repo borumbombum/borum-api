@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"crypto/subtle"
+	"fmt"
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
@@ -43,16 +44,17 @@ func constantTimeEquals(a, b string) bool {
 
 // RegisterPassword installs the email/password method. It accepts exactly the
 // configured admin email and the bcrypt-hashed password. Every failure, wrong
-// email or wrong password, returns the same generic error.
+// email or wrong password, still maps to the same generic ErrInvalidCredentials
+// for callers; the wrapped detail exists only for server-side logging.
 func RegisterPassword(email, passwordHash string) {
 	Register(MethodFunc{
 		name: "password",
 		fn: func(_ context.Context, c Credentials) (Identity, error) {
 			if !constantTimeEquals(strings.ToLower(c.Email), strings.ToLower(email)) {
-				return Identity{}, ErrInvalidCredentials
+				return Identity{}, fmt.Errorf("unknown email: %w", ErrInvalidCredentials)
 			}
 			if bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(c.Password)) != nil {
-				return Identity{}, ErrInvalidCredentials
+				return Identity{}, fmt.Errorf("password mismatch: %w", ErrInvalidCredentials)
 			}
 			return Identity{UserID: "god", Method: "password"}, nil
 		},

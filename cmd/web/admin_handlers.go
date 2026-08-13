@@ -66,7 +66,9 @@ func (a *app) godArticlesHandler(w http.ResponseWriter, r *http.Request) {
 
 // godArticleNewHandler renders the create form.
 func (a *app) godArticleNewHandler(w http.ResponseWriter, r *http.Request) {
-	a.renderGodPage(w, http.StatusOK, "god_form", a.newGodData(r, true))
+	data := a.newGodData(r, true)
+	data.Article = &content.Article{}
+	a.renderGodPage(w, http.StatusOK, "god_form", data)
 }
 
 // godArticleCreateHandler validates and stores a new article, then returns to

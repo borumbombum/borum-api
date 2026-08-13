@@ -12,14 +12,15 @@
         <form data-login-form class="mt-6 flex w-full max-w-sm flex-col gap-4 text-left">
             <label class="flex flex-col gap-1 font-mono text-[13px] text-ink-soft">
                 email
-                <input id="email" name="email" type="email" required autocomplete="username" placeholder="you@example.com" class="w-full border-0 border-b border-hairline bg-transparent px-0 py-2 font-mono text-[13px] text-ink placeholder:text-[var(--color-faint)] focus:border-ink focus:outline-none" />
+                <input id="email" name="email" type="email" required autocomplete="username" placeholder="you@example.com" class="w-full border-0 border-b border-hairline bg-transparent px-0 py-2 font-mono text-[13px] text-ink placeholder:text-muted focus:border-ink focus:outline-none" />
             </label>
             <label class="flex flex-col gap-1 font-mono text-[13px] text-ink-soft">
                 password
-                <input id="password" name="password" type="password" required autocomplete="current-password" placeholder="password" class="w-full border-0 border-b border-hairline bg-transparent px-0 py-2 font-mono text-[13px] text-ink placeholder:text-[var(--color-faint)] focus:border-ink focus:outline-none" />
+                <input id="password" name="password" type="password" required autocomplete="current-password" placeholder="password" class="w-full border-0 border-b border-hairline bg-transparent px-0 py-2 font-mono text-[13px] text-ink placeholder:text-muted focus:border-ink focus:outline-none" />
             </label>
             <button type="submit" class="btn btn-primary btn-sm self-start">enter</button>
             <p data-login-error class="font-mono text-[12px] text-red-600" hidden>wrong email or password</p>
+            <a href="/" class="mt-6 font-mono text-[13px] text-[var(--color-ink-soft)] hover:opacity-50">← back to home</a>
         </form>
     </div>
 </main>

@@ -36,7 +36,7 @@
     <ul class="archive-with-dates">
         {{range .Articles}}
         <li class="relative">
-            {{if .Star}}<span class="star absolute"></span>{{end}}
+            {{if .Star}}<span class="star absolute" aria-hidden="true"><i data-lucide="star" width="16" height="16"></i></span>{{end}}
             <div>
                 <a href="/blog/{{.Slug}}" style="font-weight: 200;">{{.Title}}</a>
                 <span class="archive-inline-date opacity-50">{{shortDate .Date}}</span>

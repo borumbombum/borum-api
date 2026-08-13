@@ -60,11 +60,14 @@ func router(a *app, routes []apiRoute) http.Handler {
 
 	// Images never change once published; cache them client-side for 7 days so
 	// repeat visits skip the round-trip over the tunnel. Other assets (JS/CSS)
-	// stay uncached so deploys always serve fresh styles.
+	// always revalidate so deploys and edits serve fresh styles.
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if strings.HasPrefix(r.URL.Path, "/assets/") {
+			switch {
+			case strings.HasPrefix(r.URL.Path, "/assets/"):
 				w.Header().Set("Cache-Control", "public, max-age=604800, stale-while-revalidate=86400")
+			case r.URL.Path == "/app.js" || r.URL.Path == "/god.js" || r.URL.Path == "/god-editor.js" || r.URL.Path == "/styles.css" || strings.HasPrefix(r.URL.Path, "/vendor/"):
+				w.Header().Set("Cache-Control", "no-cache")
 			}
 			next.ServeHTTP(w, r)
 		})
@@ -81,6 +84,7 @@ func router(a *app, routes []apiRoute) http.Handler {
 	r.Handle("/vendor/*", http.StripPrefix("/", fs))
 	r.Handle("/app.js", fs)
 	r.Handle("/god.js", fs)
+	r.Handle("/god-editor.js", fs)
 	r.Handle("/favicon.svg", fs)
 
 	// /styles.css is the concat of static/css/*.css, computed at startup

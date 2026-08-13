@@ -5,9 +5,6 @@
     :root {
         --wrapper-gutter: 1.5rem;
     }
-    .star::before {
-        display: none;
-    }
     .d-none-mobile {
         display: none;
     }

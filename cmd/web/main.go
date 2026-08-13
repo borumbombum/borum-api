@@ -46,8 +46,10 @@ func sessionTTL() time.Duration {
 }
 
 func main() {
-	// Env first: every later step reads configuration from it.
-	if err := godotenv.Load(); err != nil {
+	// Env first: every later step reads configuration from it. Overload so
+	// .env is the single source of truth even when a launcher exports the same
+	// variables into the process environment.
+	if err := godotenv.Overload(); err != nil {
 		log.Fatal("Error loading Turso variables")
 	}
 
