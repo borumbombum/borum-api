@@ -80,6 +80,29 @@ in cmd/web/main.go (`-address`, `-port`), overridable as shown in "Port" above.
 
 Keep it alive with tmux (pkg install tmux).
 
+## Admin login (/god)
+
+The site has a single-user admin area behind `/login` (email/password; no
+signup). Credentials come from the environment:
+
+- `ADMIN_EMAIL` — the only email that may log in.
+- `ADMIN_PASSWORD_HASH` — a **bcrypt hash** of the password, not the password
+  itself. Generate it once with htpasswd (or any bcrypt tool):
+
+      htpasswd -bnBC 10 "" 'your-password' | tr -d ':\n'
+
+  Copy the whole `$2a$...` string into `.env`.
+- `SESSION_TTL_HOURS` — optional session lifetime in hours (default 30 days).
+
+Sessions are stored in the `sessions` table (only SHA-256 token hashes; the
+random token itself lives in an HttpOnly, SameSite=Lax cookie, marked `Secure`
+automatically when the request arrives over HTTPS). Login attempts are
+rate-limited. The `/god` forms are protected with per-session CSRF tokens.
+
+Signed in, an "edit →" link appears on `/blog/{slug}`, and `/god/articles`
+lists every article with create/edit forms. The code is built for more login
+methods (Nostr) via the `Method` interface in `internal/auth`.
+
 ## Access
 
 - Custom API (8091): http://<host>:8091

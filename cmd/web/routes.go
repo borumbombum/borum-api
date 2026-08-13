@@ -29,8 +29,19 @@ func (a *app) apiRoutes() []apiRoute {
 		{http.MethodGet, "/blog/{slug}", a.articleHandler},
 		{http.MethodGet, "/tags/{tag}", a.tagHandler},
 		{http.MethodGet, "/api/health", a.healthHandler},
-		{http.MethodGet, "/api/v1/cms", a.cmsHandler},
 		{http.MethodGet, "/data/articles.json", a.articlesJSONHandler},
+
+		{http.MethodGet, "/login", a.loginPageHandler},
+		{http.MethodPost, "/api/v1/auth/login", a.loginHandler},
+		{http.MethodPost, "/api/v1/auth/logout", a.requireAPI(a.logoutHandler)},
+		{http.MethodGet, "/api/v1/auth/me", a.meHandler},
+
+		{http.MethodGet, "/god", a.requirePage(a.godHandler)},
+		{http.MethodGet, "/god/articles", a.requirePage(a.godArticlesHandler)},
+		{http.MethodGet, "/god/articles/new", a.requirePage(a.godArticleNewHandler)},
+		{http.MethodPost, "/god/articles", a.requirePage(a.godArticleCreateHandler)},
+		{http.MethodGet, "/god/articles/{slug}/edit", a.requirePage(a.godArticleEditHandler)},
+		{http.MethodPost, "/god/articles/{slug}/edit", a.requirePage(a.godArticleUpdateHandler)},
 	}
 }
 
@@ -40,6 +51,7 @@ func router(a *app, routes []apiRoute) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(a.auth.Peek)
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"http://localhost:5173"},
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -68,6 +80,7 @@ func router(a *app, routes []apiRoute) http.Handler {
 	r.Handle("/assets/*", http.StripPrefix("/", fs))
 	r.Handle("/vendor/*", http.StripPrefix("/", fs))
 	r.Handle("/app.js", fs)
+	r.Handle("/god.js", fs)
 	r.Handle("/favicon.svg", fs)
 
 	// /styles.css is the concat of static/css/*.css, computed at startup

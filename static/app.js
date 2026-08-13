@@ -1031,13 +1031,28 @@
     if (loginForm) {
         loginForm.addEventListener('submit', function (e) {
             e.preventDefault();
-            var email = '';
             var emailInput = loginForm.querySelector('#email');
-            if (emailInput) email = emailInput.value;
-            var p = doc.createElement('p');
-            p.className = 'mt-8 border border-hairline bg-paper-dim px-4 py-3 font-mono text-[12px] text-ink-soft';
-            p.textContent = "We'll email a link to " + email + " the day this actually works.";
-            loginForm.parentNode.replaceChild(p, loginForm);
+            var passInput = loginForm.querySelector('#password');
+            var errEl = loginForm.querySelector('[data-login-error]');
+            var email = emailInput ? emailInput.value : '';
+            var pass = passInput ? passInput.value : '';
+            var btn = loginForm.querySelector('[type="submit"]');
+            if (btn) btn.disabled = true;
+            fetch('/api/v1/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, password: pass })
+            }).then(function (res) {
+                if (res.ok) {
+                    window.location.href = '/god/articles';
+                    return;
+                }
+                if (errEl) errEl.hidden = false;
+                if (btn) btn.disabled = false;
+            }).catch(function () {
+                if (errEl) errEl.hidden = false;
+                if (btn) btn.disabled = false;
+            });
         });
     }
 

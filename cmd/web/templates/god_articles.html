@@ -1,0 +1,25 @@
+{{define "title"}}god · articles{{end}}
+{{define "content"}}
+<header class="flex items-center justify-between border-b border-hairline px-6 py-4">
+    <div class="flex items-center gap-3">
+        <button data-drawer-toggle type="button" class="cursor-pointer text-ink" aria-label="Toggle menu">
+            <i data-lucide="menu" width="20" height="20"></i>
+        </button>
+        <h1 class="font-mono text-[13px] uppercase tracking-[0.12em]">articles</h1>
+    </div>
+    <a href="/god/articles/new" class="btn btn-primary btn-sm">+ new</a>
+</header>
+<main class="wrapper py-8">
+    <ul class="flex flex-col">
+        {{range .Articles}}
+        <li class="flex items-center justify-between border-b border-hairline py-3">
+            <div>
+                <a href="/blog/{{.Slug}}" class="border-b-0 font-weight-600 hover:opacity-60">{{.Title}}</a>
+                <span class="ml-2 font-mono text-[11px] opacity-50">{{.Slug}}</span>
+            </div>
+            <a href="/god/articles/{{.Slug}}/edit" class="font-mono text-[12px] hover:opacity-60">edit →</a>
+        </li>
+        {{end}}
+    </ul>
+</main>
+{{end}}

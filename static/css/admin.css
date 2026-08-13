@@ -1,0 +1,23 @@
+/* ============================================================
+   Login & admin (/god) forms
+   ============================================================ */
+/* Native form controls should match the active theme: give date pickers and
+   autofilled fields a dark palette when the site is in dark mode. */
+.theme-dark input[type="date"],
+.theme-dark input[type="text"],
+.theme-dark input[type="email"],
+.theme-dark input[type="password"] {
+    color-scheme: dark;
+}
+
+.theme-dark input:-webkit-autofill,
+.theme-dark input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--foreground-text);
+    -webkit-box-shadow: 0 0 0 1000px var(--background) inset;
+    caret-color: var(--foreground-text);
+}
+
+/* Keep the date input glyph on the theme's ink colour. */
+.theme-dark input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+}

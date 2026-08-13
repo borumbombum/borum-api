@@ -9,9 +9,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
+	"github.com/borumbombum/borum-api/internal/auth"
 	"github.com/borumbombum/borum-api/internal/battery"
 	"github.com/borumbombum/borum-api/internal/content"
 	"github.com/borumbombum/borum-api/internal/db"
@@ -26,68 +28,88 @@ import (
 type app struct {
 	srv         *http.Server
 	db          *sql.DB
+	auth        *auth.Service
 	css         []byte
 	version     string
 	errorLogger *log.Logger
 }
 
+// sessionTTL reads SESSION_TTL_HOURS from the environment, defaulting to 30
+// days when unset or unparsable.
+func sessionTTL() time.Duration {
+	if h := os.Getenv("SESSION_TTL_HOURS"); h != "" {
+		if n, err := strconv.Atoi(h); err == nil && n > 0 {
+			return time.Duration(n) * time.Hour
+		}
+	}
+	return 720 * time.Hour
+}
+
 func main() {
-	// Initialize the app
-	a := &app{version: readVersion()}
+	// Env first: every later step reads configuration from it.
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading Turso variables")
+	}
 
-	// Load API routes
-	routes := a.apiRoutes()
+	// Custom loggers.
+	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	infoLog.Printf("Starting server someday")
+	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Llongfile)
 
+	// Turso database: apply pending schema migrations, then point the article
+	// store and the auth service at it. All three must succeed before any
+	// request is served.
+	sqlDB := sql.OpenDB(turso.NewConnector(os.Getenv("TURSO_URL"), os.Getenv("TURSO_TOKEN")))
+	defer sqlDB.Close()
+
+	if err := db.Migrate(context.Background(), sqlDB); err != nil {
+		log.Fatal(err)
+	}
+	content.Init(sqlDB)
+
+	// Wire the single-user auth service from the environment. The admin
+	// password hash is generated once and stored in ADMIN_PASSWORD_HASH.
+	auth.RegisterPassword(os.Getenv("ADMIN_EMAIL"), os.Getenv("ADMIN_PASSWORD_HASH"))
+
+	a := &app{
+		db:          sqlDB,
+		version:     readVersion(),
+		errorLogger: errorLog,
+		auth: auth.New(sqlDB, auth.Config{
+			AdminEmail:        os.Getenv("ADMIN_EMAIL"),
+			AdminPasswordHash: os.Getenv("ADMIN_PASSWORD_HASH"),
+			SessionTTL:        sessionTTL(),
+			CookieName:        "borum_session",
+		}),
+	}
+
+	// Load templates and the concatenated stylesheet before serving.
 	if err := loadTemplates(); err != nil {
 		log.Fatal(err)
 	}
-
 	css, err := concatCSS()
 	if err != nil {
 		log.Fatal(err)
 	}
 	a.css = css
 
-	// get configs
+	// Routes depend on the auth service, so they are built only after it.
+	routes := a.apiRoutes()
+
+	// Listen address and port flags.
 	apiAddress := flag.StringP("address", "a", "127.0.0.1", "API Address")
 	apiPort := flag.StringP("port", "p", "8091", "API Port")
-
 	flag.Parse()
-
-	// Custom loggers
-	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
-	infoLog.Printf("Starting server someday")
-	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Llongfile)
-
-	a.errorLogger = errorLog
 
 	// Bind the listener before announcing anything, so a port conflict is a
 	// fatal error instead of a process that is alive but serving nothing.
 	addr := *apiAddress + ":" + *apiPort
-
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Fatalf("failed to listen on %s: %v", addr, err)
 	}
 
-	// Turso stuff
-	err = godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading Turso variables")
-	}
-	// log.Printf("TURSO_TOKEN %v", os.Getenv("TURSO_TOKEN"))
-	sqlDB := sql.OpenDB(turso.NewConnector(os.Getenv("TURSO_URL"), os.Getenv("TURSO_TOKEN")))
-	a.db = sqlDB
-	defer sqlDB.Close()
-
-	// Apply pending schema migrations, then point the article store at the
-	// database. Both must succeed before the server starts serving.
-	if err := db.Migrate(context.Background(), sqlDB); err != nil {
-		log.Fatal(err)
-	}
-	content.Init(sqlDB)
-
-	// start the server
+	// Build the server.
 	a.srv = &http.Server{
 		Handler:      router(a, routes),
 		ReadTimeout:  5 * time.Second,

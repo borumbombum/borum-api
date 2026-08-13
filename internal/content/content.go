@@ -101,6 +101,14 @@ func (c *ttlCache[T]) get(ctx context.Context, load func(context.Context) (T, er
 	return c.value
 }
 
+// reset marks the cache stale so the next get reloads from the database. It
+// is called by Invalidate after an admin write.
+func (c *ttlCache[T]) reset() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.loaded = false
+}
+
 var (
 	summaries = ttlCache[[]ArticleSummary]{}
 	palette   = ttlCache[[]PaletteItem]{}
@@ -178,6 +186,20 @@ func (c *articleCache) get(ctx context.Context, slug string) (Article, bool) {
 	c.by[slug] = a
 	c.trim()
 	return a, true
+}
+
+// remove drops one slug from the per-article cache, used by Invalidate after
+// an admin edit so the next article read hits the database.
+func (c *articleCache) remove(slug string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if prev, ok := c.sz[slug]; ok {
+		c.total -= prev
+	}
+	delete(c.at, slug)
+	delete(c.used, slug)
+	delete(c.sz, slug)
+	delete(c.by, slug)
 }
 
 // trim evicts the least-recently-used entries until total bytes fit under
@@ -298,4 +320,53 @@ func unmarshalTags(s string) []string {
 // Principles returns every imported principle.
 func Principles() []Principle {
 	return principles
+}
+
+// Save inserts the article or, when the slug already exists, updates every
+// column. The write goes straight to the database; caches are invalidated so
+// the next read sees the new data immediately.
+func Save(ctx context.Context, a Article) error {
+	tags, err := json.Marshal(a.Tags)
+	if err != nil {
+		return err
+	}
+	_, err = store.db.ExecContext(ctx, `INSERT INTO articles
+		(slug, title, subtitle, date, tags, excerpt, image, image_caption,
+		 initial_love, star, featured, body)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(slug) DO UPDATE SET
+			title = excluded.title,
+			subtitle = excluded.subtitle,
+			date = excluded.date,
+			tags = excluded.tags,
+			excerpt = excluded.excerpt,
+			image = excluded.image,
+			image_caption = excluded.image_caption,
+			initial_love = excluded.initial_love,
+			star = excluded.star,
+			featured = excluded.featured,
+			body = excluded.body`,
+		a.Slug, a.Title, a.Subtitle, a.Date, string(tags), a.Excerpt, a.Image,
+		a.ImageCaption, a.InitialLove, boolInt(a.Star), boolInt(a.Featured), a.Body)
+	if err != nil {
+		return err
+	}
+	Invalidate(a.Slug)
+	return nil
+}
+
+// Invalidate drops the cached copies of the given article so the next read
+// reloads from the database. Every admin write calls it; public reads never do.
+func Invalidate(slug string) {
+	summaries.reset()
+	palette.reset()
+	articleStore.remove(slug)
+}
+
+// boolInt converts a bool to SQLite's integer representation.
+func boolInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }

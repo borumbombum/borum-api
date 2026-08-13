@@ -1,0 +1,27 @@
+{{define "godbase"}}<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,600;1,400;1,600&display=swap"
+			rel="stylesheet"
+		/>
+		<script defer src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+		<link rel="stylesheet" href="/styles.css" />
+		<title>{{template "title" .}}</title>
+	</head>
+	<body>
+		<script>
+			(function(){var t=localStorage.getItem('theme');if(t==='light'){document.body.classList.add('theme-light');}else{document.body.classList.add('theme-dark');}if(localStorage.getItem('noimages')==='1'){document.body.classList.add('no-images');}})();
+		</script>
+{{template "drawer" .}}
+		<div class="min-h-screen">
+{{template "content" .}}
+		</div>
+		<script src="/vendor/lucide/lucide.min.js"></script>
+		<script src="/god.js"></script>
+	</body>
+</html>{{end}}

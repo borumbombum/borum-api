@@ -48,7 +48,8 @@
 # Versioning
 
 - The app version lives in the root `VERSION` file (`x.y.z`) and is shown in the site footer.
-- "bump" / "commit and push" / "push" / "push to remote" / "release" → bump the **patch** version (`0.1.0 → 0.1.1`) **before** committing, and include it in that commit.
+- "bump" / "commit and push" / "push" / "push to remote" / "release" → bump the **patch** version (`0.1.0 → 0.1.1`), then commit, then push — always together.
 - A plain "commit" (no push) does **not** bump, unless explicitly stated.
 - Always bump **patch** unless the user explicitly asks for minor or major.
 - Always stage all changes with `git add -A` before every commit.
+- **Never** ask, propose, or auto-run a bump/commit/push after finishing a task. The user tests every change first and orders bump/commit/push explicitly when ready.

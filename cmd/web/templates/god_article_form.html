@@ -1,0 +1,69 @@
+{{define "title"}}god · {{if .IsNew}}new article{{else}}edit{{end}}{{end}}
+{{define "content"}}
+<header class="flex items-center justify-between border-b border-hairline px-6 py-4">
+    <div class="flex items-center gap-3">
+        <button data-drawer-toggle type="button" class="cursor-pointer text-ink" aria-label="Toggle menu">
+            <i data-lucide="menu" width="20" height="20"></i>
+        </button>
+        <h1 class="font-mono text-[13px] uppercase tracking-[0.12em]">{{if .IsNew}}new article{{else}}edit{{end}}</h1>
+    </div>
+    <a href="/god/articles" class="font-mono text-[12px] hover:opacity-60">← articles</a>
+</header>
+<main class="wrapper py-8">
+    {{if .Error}}
+    <p class="mb-4 border border-hairline-strong px-3 py-2 font-mono text-[12px] text-red-600">{{.Error}}</p>
+    {{end}}
+    <form method="post" action="{{if .IsNew}}/god/articles{{else}}/god/articles/{{.Article.Slug}}/edit{{end}}" class="flex max-w-xl flex-col gap-4">
+        <input type="hidden" name="_csrf" value="{{.CSRF}}" />
+        <label class="flex flex-col gap-1 font-mono text-[13px] text-ink-soft">
+            title *
+            <input name="title" type="text" required value="{{.Article.Title}}" class="w-full border-0 border-b border-hairline bg-transparent px-0 py-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none" />
+        </label>
+        {{if .IsNew}}
+        <label class="flex flex-col gap-1 font-mono text-[13px] text-ink-soft">
+            slug *
+            <input name="slug" type="text" required value="{{.Article.Slug}}" pattern="[a-z0-9-]+" class="w-full border-0 border-b border-hairline bg-transparent px-0 py-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none" />
+        </label>
+        {{else}}
+        <p class="font-mono text-[13px] text-ink-soft">slug — {{.Article.Slug}} (immutable)</p>
+        {{end}}
+        <label class="flex flex-col gap-1 font-mono text-[13px] text-ink-soft">
+            subtitle
+            <input name="subtitle" type="text" value="{{.Article.Subtitle}}" class="w-full border-0 border-b border-hairline bg-transparent px-0 py-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none" />
+        </label>
+        <label class="flex flex-col gap-1 font-mono text-[13px] text-ink-soft">
+            date *
+            <input name="date" type="date" required value="{{.Article.Date}}" class="w-full border-0 border-b border-hairline bg-transparent px-0 py-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none" />
+        </label>
+        <label class="flex flex-col gap-1 font-mono text-[13px] text-ink-soft">
+            tags (comma separated)
+            <input name="tags" type="text" value="{{.Tags}}" class="w-full border-0 border-b border-hairline bg-transparent px-0 py-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none" />
+        </label>
+        <label class="flex flex-col gap-1 font-mono text-[13px] text-ink-soft">
+            excerpt
+            <textarea name="excerpt" rows="2" class="w-full border border-hairline bg-transparent p-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none">{{.Article.Excerpt}}</textarea>
+        </label>
+        <label class="flex flex-col gap-1 font-mono text-[13px] text-ink-soft">
+            image
+            <input name="image" type="text" value="{{.Article.Image}}" class="w-full border-0 border-b border-hairline bg-transparent px-0 py-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none" />
+        </label>
+        <label class="flex flex-col gap-1 font-mono text-[13px] text-ink-soft">
+            image caption
+            <input name="image_caption" type="text" value="{{.Article.ImageCaption}}" class="w-full border-0 border-b border-hairline bg-transparent px-0 py-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none" />
+        </label>
+        <div class="flex gap-6 font-mono text-[13px] text-ink-soft">
+            <label class="flex items-center gap-2">
+                <input name="star" type="checkbox" {{if .Article.Star}}checked{{end}} class="accent-black dark:accent-white" /> star
+            </label>
+            <label class="flex items-center gap-2">
+                <input name="featured" type="checkbox" {{if .Article.Featured}}checked{{end}} class="accent-black dark:accent-white" /> featured
+            </label>
+        </div>
+        <label class="flex flex-col gap-1 font-mono text-[13px] text-ink-soft">
+            body (html)
+            <textarea name="body" rows="20" class="w-full border border-hairline bg-transparent p-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none">{{.Article.Body}}</textarea>
+        </label>
+        <button type="submit" class="btn btn-primary btn-sm self-start">save</button>
+    </form>
+</main>
+{{end}}

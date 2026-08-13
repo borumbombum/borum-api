@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/borumbombum/borum-api/internal/auth"
 	"github.com/borumbombum/borum-api/internal/battery"
 	"github.com/borumbombum/borum-api/internal/content"
 	"github.com/go-chi/chi/v5"
@@ -42,6 +43,7 @@ var cssFiles = []string{
 	"theme.css",
 	"base.css",
 	"components.css",
+	"admin.css",
 	"prose.css",
 	"animations.css",
 	"breakpoints.css",
@@ -71,18 +73,31 @@ type pageData struct {
 	ActiveNav string
 	Battery   battery.Snapshot
 	Version   string
+	LoggedIn  bool
 }
 
 // newPageData builds the shared view model for a page with the given active
-// nav entry, carrying the app version so the footer can show it.
-func (a *app) newPageData(active string) pageData {
-	return pageData{ActiveNav: active, Battery: battery.Current(), Version: a.version}
+// nav entry, carrying the app version so the footer can show it. LoggedIn is
+// set from the Peek middleware's session resolution, so public pages can show
+// admin affordances (the article edit button) without blocking anyone.
+func (a *app) newPageData(r *http.Request, active string) pageData {
+	_, loggedIn := auth.SessionFrom(r.Context())
+	return pageData{
+		ActiveNav: active,
+		Battery:   battery.Current(),
+		Version:   a.version,
+		LoggedIn:  loggedIn,
+	}
 }
 
 // pageTemplates maps a page key to its parsed template set. Each page is
 // parsed together with the shared base/header/footer partials so the page's
 // "title", "meta" and "content" blocks override the layout.
 var pageTemplates = map[string]*template.Template{}
+
+// godTemplates maps an admin page key to its template set, parsed against the
+// god base layout (god_base.html + god_drawer.html) instead of the public one.
+var godTemplates = map[string]*template.Template{}
 
 var funcMap = template.FuncMap{
 	"safe": func(s string) template.HTML { return template.HTML(s) },
@@ -122,6 +137,7 @@ func loadTemplates() error {
 		"home":    "home.html",
 		"article": "article.html",
 		"tag":     "tag.html",
+		"login":   "login.html",
 		"404":     "404.html",
 	}
 	common := []string{"base.html", "header.html", "footer.html"}
@@ -136,6 +152,26 @@ func loadTemplates() error {
 			return fmt.Errorf("template %s: %w", name, err)
 		}
 		pageTemplates[name] = t
+	}
+
+	// The /god pages share their own layout: god_base.html + the drawer
+	// partial, without the public header/footer.
+	godPages := map[string]string{
+		"god_list": "god_articles.html",
+		"god_form": "god_article_form.html",
+	}
+	godCommon := []string{"god_base.html", "god_drawer.html"}
+	for name, page := range godPages {
+		files := append(append([]string{}, godCommon...), page)
+		paths := make([]string, 0, len(files))
+		for _, f := range files {
+			paths = append(paths, filepath.Join(templateDir, f))
+		}
+		t, err := template.New("").Funcs(funcMap).ParseFiles(paths...)
+		if err != nil {
+			return fmt.Errorf("template %s: %w", name, err)
+		}
+		godTemplates[name] = t
 	}
 	return nil
 }
@@ -163,7 +199,7 @@ func (a *app) homeHandler(w http.ResponseWriter, r *http.Request) {
 		Tags       []string
 		Principles []content.Principle
 	}{
-		pageData:   a.newPageData("home"),
+		pageData:   a.newPageData(r, "home"),
 		Articles:   arts,
 		Tags:       allTags(arts),
 		Principles: content.Principles(),
@@ -188,7 +224,7 @@ func (a *app) articleHandler(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		pageData
 		Article *content.Article
-	}{pageData: a.newPageData("articles"), Article: art}
+	}{pageData: a.newPageData(r, "articles"), Article: art}
 	renderPage(w, http.StatusOK, "article", data)
 }
 
@@ -213,13 +249,13 @@ func (a *app) tagHandler(w http.ResponseWriter, r *http.Request) {
 		pageData
 		Tag      string
 		Articles []content.ArticleSummary
-	}{pageData: a.newPageData("articles"), Tag: tag, Articles: filtered}
+	}{pageData: a.newPageData(r, "articles"), Tag: tag, Articles: filtered}
 	renderPage(w, http.StatusOK, "tag", data)
 }
 
 // notFoundHandler is also used as the router's NotFound handler.
 func (a *app) notFoundHandler(w http.ResponseWriter, r *http.Request) {
-	renderPage(w, http.StatusNotFound, "404", a.newPageData(""))
+	renderPage(w, http.StatusNotFound, "404", a.newPageData(r, ""))
 }
 
 // allTags returns the unique tags across the given articles in the order they

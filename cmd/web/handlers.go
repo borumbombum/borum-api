@@ -43,12 +43,6 @@ func (a *app) healthHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, `{"status":"ok","db":"ok","latancy":%d, "battery": %s}`, latency.Milliseconds(), batteryJSON)
 }
 
-// cmsHandler is a placeholder for the CMS endpoints.
-func (a *app) cmsHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(`{"endpoint":"cms"}`))
-}
-
 // articlesJSONHandler serves the minimal article data (slug, title, tags) for
 // the client-side command palette, from the database. The result is cached
 // server-side (see content.Palette) and served from the same /data/articles.json
