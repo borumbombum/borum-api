@@ -1,6 +1,6 @@
 {{define "title"}}god · articles{{end}}
 {{define "content"}}
-<header class="flex items-center justify-between border-b border-hairline px-6 py-4">
+<header class="mb-2 flex items-center justify-between border-b border-hairline px-6 py-4">
     <div class="flex items-center gap-3">
         <button data-drawer-toggle type="button" class="cursor-pointer text-ink" aria-label="Toggle menu">
             <i data-lucide="menu" width="20" height="20"></i>
@@ -9,7 +9,7 @@
     </div>
     <a href="/god/articles/new" class="btn btn-primary btn-sm">+ new</a>
 </header>
-<main class="wrapper py-8">
+<main class="wrapper pt-12">
     <ul class="flex flex-col">
         {{range .Articles}}
         <li class="flex items-center justify-between border-b border-hairline py-3">

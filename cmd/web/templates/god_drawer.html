@@ -1,12 +1,14 @@
 {{define "drawer"}}
 <div data-drawer-backdrop class="fixed inset-0 z-40 bg-black/20" hidden></div>
-<aside data-drawer class="fixed inset-y-0 left-0 z-50 flex w-64 flex-col gap-1 border-r border-[var(--color-hairline)] bg-[var(--color-paper)] p-6 transition-transform duration-300 ease-in-out" style="transform: translateX(-100%)">
-    <p class="font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--color-faint)]">god</p>
-    <nav class="mt-4 flex flex-col gap-3 font-mono text-[13px]">
-        <a href="/god/articles" class="border-b-0 hover:opacity-60 hover:font-semibold">/articles</a>
-        <a href="/god/articles/new" class="border-b-0 hover:opacity-60 hover:font-semibold">/articles/new</a>
-        <a href="/" class="border-b-0 hover:opacity-60 hover:font-semibold">/view site</a>
+<aside data-drawer class="fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-hairline bg-paper p-4 transition-transform" style="transform: translateX(-100%)">
+    <p class="px-3 pb-3 font-mono text-[11px] uppercase tracking-[0.12em] text-faint">god</p>
+    <nav class="flex flex-col gap-1 font-mono text-[13px]">
+        <a href="/god/articles" class="rounded border-b-0 px-3 py-2 text-ink-soft hover:bg-[var(--color-hairline)] hover:text-ink">/articles</a>
+        <a href="/god/articles/new" class="rounded border-b-0 px-3 py-2 text-ink-soft hover:bg-[var(--color-hairline)] hover:text-ink">/articles/new</a>
+        <a href="/" class="rounded border-b-0 px-3 py-2 text-ink-soft hover:bg-[var(--color-hairline)] hover:text-ink">/view site</a>
     </nav>
-    <button data-logout type="button" class="mt-auto cursor-pointer border border-black bg-black px-3 py-1.5 font-mono text-[13px] text-white transition-opacity hover:opacity-80">logout</button>
+    <div class="mt-auto border-t border-hairline pt-2">
+        <button data-logout type="button" class="flex w-full cursor-pointer items-center rounded px-3 py-2 text-left font-mono text-[13px] text-ink-soft hover:bg-[var(--color-hairline)] hover:text-ink">logout</button>
+    </div>
 </aside>
 {{end}}

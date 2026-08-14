@@ -18,7 +18,7 @@
 			(function(){var t=localStorage.getItem('theme');if(t==='light'){document.body.classList.add('theme-light');}else{document.body.classList.add('theme-dark');}if(localStorage.getItem('noimages')==='1'){document.body.classList.add('no-images');}})();
 		</script>
 {{template "drawer" .}}
-		<div class="min-h-screen">
+		<div class="min-h-screen mb-2">
 {{template "content" .}}
 		</div>
 		<script src="/vendor/lucide/lucide.min.js"></script>
