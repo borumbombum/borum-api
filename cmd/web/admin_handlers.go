@@ -145,6 +145,27 @@ func (a *app) godArticleUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/god/articles", http.StatusSeeOther)
 }
 
+// godArticleDeleteHandler removes an article by its URL slug and returns to
+// the list. Like every admin write, it requires a valid CSRF token.
+func (a *app) godArticleDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
+	data := a.newGodData(r, false)
+	if !a.validCSRF(r, data.CSRF) {
+		data.Error = "invalid request token, try again"
+		data.Articles = content.List(r.Context())
+		a.renderGodPage(w, http.StatusForbidden, "god_list", data)
+		return
+	}
+	if err := content.Delete(r.Context(), slug); err != nil {
+		a.errorLogger.Print(err.Error())
+		data.Error = "could not delete the article"
+		data.Articles = content.List(r.Context())
+		a.renderGodPage(w, http.StatusInternalServerError, "god_list", data)
+		return
+	}
+	http.Redirect(w, r, "/god/articles", http.StatusSeeOther)
+}
+
 // validCSRF checks the form's _csrf field against the caller's session token.
 func (a *app) validCSRF(r *http.Request, _ string) bool {
 	token := a.sessionToken(r)

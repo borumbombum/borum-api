@@ -42,6 +42,7 @@ func (a *app) apiRoutes() []apiRoute {
 		{http.MethodPost, "/god/articles", a.requirePage(a.godArticleCreateHandler)},
 		{http.MethodGet, "/god/articles/{slug}/edit", a.requirePage(a.godArticleEditHandler)},
 		{http.MethodPost, "/god/articles/{slug}/edit", a.requirePage(a.godArticleUpdateHandler)},
+		{http.MethodPost, "/god/articles/{slug}/delete", a.requirePage(a.godArticleDeleteHandler)},
 	}
 }
 

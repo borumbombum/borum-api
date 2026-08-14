@@ -355,6 +355,16 @@ func Save(ctx context.Context, a Article) error {
 	return nil
 }
 
+// Delete removes the article with the given slug and drops it from every
+// cache so public pages stop showing it immediately.
+func Delete(ctx context.Context, slug string) error {
+	if _, err := store.db.ExecContext(ctx, `DELETE FROM articles WHERE slug = ?`, slug); err != nil {
+		return err
+	}
+	Invalidate(slug)
+	return nil
+}
+
 // Invalidate drops the cached copies of the given article so the next read
 // reloads from the database. Every admin write calls it; public reads never do.
 func Invalidate(slug string) {

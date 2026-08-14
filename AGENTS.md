@@ -21,6 +21,7 @@
 
 # CSS
 
+- **ONLY USE TAILWIND for front-end CSS. Do not add or edit hand-written CSS in `static/css/` (theme, base, components, prose, admin, editor, animations, breakpoints, utilities). Style everything with Tailwind utility classes in templates.**
 - Styles live split by subject in `static/css/` and are concatenated at startup by `concatCSS()` in `cmd/web/web.go` (see the README "Styling" section).
 - `static/css/breakpoints.css` holds the responsive media queries — the mobile/desktop breakpoints.
 - Reuse the established breakpoints. Do not invent new ones:

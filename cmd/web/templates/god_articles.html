@@ -10,6 +10,9 @@
     <a href="/god/articles/new" class="btn btn-primary btn-sm">+ new</a>
 </header>
 <main class="wrapper pt-12">
+    {{if .Error}}
+    <p class="mb-4 border border-hairline-strong px-3 py-2 font-mono text-[12px] text-red-600">{{.Error}}</p>
+    {{end}}
     <ul class="flex flex-col">
         {{range .Articles}}
         <li class="flex items-center justify-between border-b border-hairline py-3">
@@ -17,7 +20,13 @@
                 <a href="/blog/{{.Slug}}" class="border-b-0 font-weight-600 hover:opacity-60">{{.Title}}</a>
                 <span class="ml-2 font-mono text-[11px] opacity-50">{{.Slug}}</span>
             </div>
-            <a href="/god/articles/{{.Slug}}/edit" class="font-mono text-[12px] hover:opacity-60">edit →</a>
+            <div class="flex items-center gap-3">
+                <a href="/god/articles/{{.Slug}}/edit" class="font-mono text-[12px] hover:opacity-60">edit →</a>
+                <form method="post" action="/god/articles/{{.Slug}}/delete" class="flex" onsubmit="return confirm('Delete this article?')">
+                    <input type="hidden" name="_csrf" value="{{$.CSRF}}" />
+                    <button type="submit" class="cursor-pointer font-mono text-[12px] text-ink-soft hover:text-red-600">delete</button>
+                </form>
+            </div>
         </li>
         {{end}}
     </ul>
