@@ -1,0 +1,30 @@
+{{define "title"}}{{.Experiment.Title}} — DOaGS{{end}}
+{{define "meta"}}<meta name="description" content="{{.Experiment.Description}}" />{{end}}
+{{define "content"}}
+<div class="wrapper pt-1">
+    {{template "header" .}}
+</div>
+
+<div class="wrapper wrapper-wide text-center pb-2">
+    <main id="main">
+        <header class="rise-in text-center">
+            <h1 class="font-display text-4xl font-light tracking-wide">{{.Experiment.Title}}</h1>
+            <h2 class="mt-2 font-mono text-[13px] text-ink-soft">{{.Experiment.Description}}</h2>
+
+            {{template "love_bar" (dict "LoggedIn" .LoggedIn "EditHref" "/god/experiments" "LoveSlug" (printf "exp:%s" .Experiment.Slug) "LoveBase" 0)}}
+        </header>
+    </main>
+</div>
+
+{{if .Experiment.Intro}}
+<div class="wrapper wrapper-wide pb-2">
+    <div class="prose-diary">
+        {{safe .Experiment.Intro}}
+    </div>
+</div>
+{{end}}
+
+{{template "experiment_body" .}}
+{{end}}
+{{define "experiment_body"}}{{end}}
+{{define "page_scripts"}}{{end}}

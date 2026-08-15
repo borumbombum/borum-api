@@ -13,6 +13,12 @@
             <i data-lucide="moon" width="20" height="20"></i>
             <span class="sr-only">Switch Theme Toggle</span>
         </button>
+        {{if .LoggedIn}}
+        <a href="/god" class="inline-flex cursor-pointer items-center border-b-0! text-ink-soft hover:text-ink" title="Admin" aria-label="Admin">
+            <i data-lucide="layout-dashboard" width="20" height="20"></i>
+            <span class="sr-only">Admin</span>
+        </a>
+        {{end}}
         <button class="nav-toggle d-none" data-nav-toggle aria-controls="primary-nav" aria-haspopup="true" aria-expanded="false" title="Menu">
             <i data-lucide="menu" width="20" height="20"></i>
             <span class="sr-only">Menu</span>

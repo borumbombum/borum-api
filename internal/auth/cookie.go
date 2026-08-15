@@ -1,9 +1,22 @@
 package auth
 
 import (
+	"net"
 	"net/http"
 	"time"
 )
+
+// isLoopback reports whether addr is a localhost address. Used to decide when
+// proxy-supplied headers can be trusted: the Cloudflare tunnel runs on the
+// same host, so a loopback peer is a trusted proxy.
+func isLoopback(addr string) bool {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return false
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
 
 // SetSessionCookie writes the session cookie for the request with the
 // configured lifetime. The Secure flag is set only when the connection is
@@ -23,7 +36,12 @@ func (s *Service) ClearSessionCookie(w http.ResponseWriter, r *http.Request) {
 
 // sessionCookie builds the session cookie for the request.
 func (s *Service) sessionCookie(r *http.Request, value string, maxAge int) *http.Cookie {
-	secure := r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https"
+	// Secure only when the connection is genuinely HTTPS. The
+	// X-Forwarded-Proto header is trusted only when the peer is loopback:
+	// the Cloudflare tunnel runs on this same host, so a local peer is a
+	// trusted proxy. A directly exposed server cannot be tricked into
+	// marking cookies Secure by spoofing the header.
+	secure := r.TLS != nil || (isLoopback(r.RemoteAddr) && r.Header.Get("X-Forwarded-Proto") == "https")
 	return &http.Cookie{
 		Name:     s.cfg.CookieName,
 		Value:    value,

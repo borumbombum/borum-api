@@ -1,0 +1,77 @@
+{{define "title"}}god · experiments{{end}}
+{{define "content"}}
+<header class="mb-2 flex items-center justify-between border-b border-hairline px-6 py-4">
+    <div class="flex items-center gap-3">
+        <button data-drawer-toggle type="button" class="cursor-pointer text-ink" aria-label="Toggle menu">
+            <i data-lucide="menu" width="20" height="20"></i>
+        </button>
+        <h1 class="font-mono text-[13px] uppercase tracking-[0.12em]">experiments</h1>
+    </div>
+    <a href="/god/articles" class="font-mono text-[12px] hover:opacity-60">← articles</a>
+</header>
+<main class="wrapper pt-12">
+    {{if .Error}}
+    <p class="mb-4 border border-hairline-strong px-3 py-2 font-mono text-[12px] text-red-600">{{.Error}}</p>
+    {{end}}
+    <p class="mb-4 max-w-xl font-mono text-[12px] text-faint">Experiments are hardcoded in code. Here you control whether each shows on the home page and in which order. Disabled experiments keep their page but are unlisted.</p>
+    <ul class="flex flex-col">
+        {{range .Experiments}}
+        <li class="border-b border-hairline py-3">
+            <div class="flex items-center justify-between">
+                <div class="min-w-0">
+                    <p class="flex items-center gap-2">
+                        <span class="font-mono text-[12px] text-faint">[#{{.Number}}]</span>
+                        <span class="font-mono text-[13px] font-semibold {{if not .Enabled}}opacity-50{{end}}">{{.Title}}</span>
+                        <span class="font-mono text-[11px] text-faint">{{.Slug}}</span>
+                    </p>
+                    <p class="mt-1 font-mono text-[12px] text-ink-soft">{{.Description}}</p>
+                </div>
+                <div class="flex shrink-0 items-center gap-3 font-mono text-[12px]">
+                    {{if gt .Number 1}}
+                    <form method="post" action="/god/experiments/{{.Slug}}/move" class="flex">
+                        <input type="hidden" name="_csrf" value="{{$.CSRF}}" />
+                        <input type="hidden" name="dir" value="up" />
+                        <button type="submit" class="cursor-pointer text-ink-soft hover:text-ink" title="Move up">↑</button>
+                    </form>
+                    {{end}}
+                    {{if lt .Number (len $.Experiments)}}
+                    <form method="post" action="/god/experiments/{{.Slug}}/move" class="flex">
+                        <input type="hidden" name="_csrf" value="{{$.CSRF}}" />
+                        <input type="hidden" name="dir" value="down" />
+                        <button type="submit" class="cursor-pointer text-ink-soft hover:text-ink" title="Move down">↓</button>
+                    </form>
+                    {{end}}
+                    <form method="post" action="/god/experiments/{{.Slug}}/toggle" class="flex">
+                        <input type="hidden" name="_csrf" value="{{$.CSRF}}" />
+                        {{if .Enabled}}
+                        <input type="hidden" name="enabled" value="0" />
+                        <button type="submit" class="cursor-pointer text-ink-soft hover:text-red-600">disable</button>
+                        {{else}}
+                        <input type="hidden" name="enabled" value="1" />
+                        <button type="submit" class="cursor-pointer text-ink-soft hover:text-ink">enable</button>
+                        {{end}}
+                    </form>
+                </div>
+            </div>
+            <details class="mt-3">
+                <summary class="cursor-pointer select-none font-mono text-[12px] text-ink-soft hover:text-ink">intro</summary>
+                <form method="post" action="/god/experiments/{{.Slug}}/intro" class="mt-3 flex flex-col gap-2">
+                    <input type="hidden" name="_csrf" value="{{$.CSRF}}" />
+                    <div class="editor-shell">
+                        <div class="editor-toolbar"></div>
+                        <div data-editor="intro-{{.Slug}}" class="article prose-diary"></div>
+                        <textarea name="intro" id="intro-{{.Slug}}" rows="8" class="hidden w-full border border-hairline bg-transparent p-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none">{{.Intro}}</textarea>
+                    </div>
+                    <p class="font-mono text-[11px] text-ink-soft">html, rendered above the form. leave empty for no intro.</p>
+                    <button type="submit" class="btn btn-primary btn-sm self-start">save intro</button>
+                </form>
+            </details>
+        </li>
+        {{end}}
+    </ul>
+</main>
+{{end}}
+{{define "page_scripts"}}
+<script src="/vendor/tiptap/tiptap.bundle.js"></script>
+<script src="/god-editor.js"></script>
+{{end}}

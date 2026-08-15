@@ -1,15 +1,15 @@
-/* god-editor.js — TipTap rich-text editor for the article body field. Loaded
-   only on the create/edit form (god_article_form.html, page_scripts block).
-   Registers no globals. If the TipTap bundle is missing it falls back to the
-   plain textarea, so the form always works. */
+/* god-editor.js — TipTap rich-text editor for admin content fields (article
+   body, experiment intro). Every [data-editor] mount on the page gets its own
+   editor and toolbar; the mount's data-editor attribute names the hidden
+   textarea it syncs to (unique per page). Registers no globals. If the TipTap
+   bundle is missing it falls back to the plain textarea, so the form always
+   works. */
 (function () {
     'use strict';
     var doc = document;
     var win = window;
 
-    function init() {
-        var mount = doc.querySelector('[data-editor]');
-        if (!mount) return;
+    function initEditor(mount) {
         var textarea = doc.getElementById(mount.getAttribute('data-editor'));
         if (!textarea || !textarea.form) return;
         var toolbar = mount.parentNode.querySelector('.editor-toolbar');
@@ -165,7 +165,11 @@
             if (src) src.classList.toggle('is-active', sourceMode);
         });
 
-        /* ------------------------------------------------ toolbar icons */
+    }
+
+    function init() {
+        var mounts = doc.querySelectorAll('[data-editor]');
+        Array.prototype.forEach.call(mounts, initEditor);
         if (win.lucide && win.lucide.createIcons) {
             win.lucide.createIcons();
         }

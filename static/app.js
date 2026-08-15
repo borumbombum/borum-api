@@ -37,6 +37,9 @@
             /* storage full or unavailable — fail silently */
         }
     }
+    function loaderShow() {
+        if (win.BorumLoader) win.BorumLoader.show();
+    }
 
     /* ------------------------------------------------ lucide icons */
     function mountIcons() {
@@ -168,6 +171,7 @@
             keys: [':home'],
             match: function (v) { return v.toLowerCase() === ':home'; },
             run: function () {
+                loaderShow();
                 doc.location.href = '/';
                 closePalette();
             }
@@ -181,6 +185,7 @@
                     var el = doc.getElementById('main');
                     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 } else {
+                    loaderShow();
                     doc.location.href = '/#main';
                 }
                 closePalette();
@@ -196,6 +201,7 @@
                     openPrinciple(n);
                     setPrincipleHash(n);
                 } else {
+                    loaderShow();
                     doc.location.href = '/#pr-' + pad(n);
                 }
                 closePalette();
@@ -373,6 +379,7 @@
         }
         var art = paletteResults[paletteSelected];
         if (art && art.slug) {
+            loaderShow();
             if (art.tag) {
                 doc.location.href = '/tags/' + encodeURIComponent(art.slug);
             } else {

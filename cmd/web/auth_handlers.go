@@ -26,12 +26,13 @@ func (a *app) loginPageHandler(w http.ResponseWriter, r *http.Request) {
 // log (never the password) for the owner to debug.
 func (a *app) loginHandler(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
+	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request"})
 		return
 	}
-	if !a.auth.AllowLogin(r.RemoteAddr + "|" + req.Email) {
-		a.errorLogger.Printf("login rate-limited for %q from %s", req.Email, r.RemoteAddr)
+	if !a.auth.AllowLogin(clientIP(r) + "|" + req.Email) {
+		a.errorLogger.Printf("login rate-limited for %q from %s", req.Email, clientIP(r))
 		writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": "too many attempts, slow down"})
 		return
 	}

@@ -17,6 +17,8 @@ import (
 	"github.com/borumbombum/borum-api/internal/battery"
 	"github.com/borumbombum/borum-api/internal/content"
 	"github.com/borumbombum/borum-api/internal/db"
+	"github.com/borumbombum/borum-api/internal/experiments"
+	"github.com/borumbombum/borum-api/internal/ratelimit"
 	"github.com/borumbombum/borum-api/internal/tasks"
 
 	"github.com/joho/godotenv"
@@ -26,12 +28,13 @@ import (
 
 // app holds our dependencies and server state.
 type app struct {
-	srv         *http.Server
-	db          *sql.DB
-	auth        *auth.Service
-	css         []byte
-	version     string
-	errorLogger *log.Logger
+	srv            *http.Server
+	db             *sql.DB
+	auth           *auth.Service
+	css            []byte
+	version        string
+	errorLogger    *log.Logger
+	convertLimiter *ratelimit.Limiter
 }
 
 // sessionTTL reads SESSION_TTL_HOURS from the environment, defaulting to 30
@@ -68,15 +71,19 @@ func main() {
 		log.Fatal(err)
 	}
 	content.Init(sqlDB)
+	if err := experiments.Init(sqlDB); err != nil {
+		log.Fatal(err)
+	}
 
 	// Wire the single-user auth service from the environment. The admin
 	// password hash is generated once and stored in ADMIN_PASSWORD_HASH.
 	auth.RegisterPassword(os.Getenv("ADMIN_EMAIL"), os.Getenv("ADMIN_PASSWORD_HASH"))
 
 	a := &app{
-		db:          sqlDB,
-		version:     readVersion(),
-		errorLogger: errorLog,
+		db:             sqlDB,
+		version:        readVersion(),
+		errorLogger:    errorLog,
+		convertLimiter: ratelimit.New(5, time.Minute),
 		auth: auth.New(sqlDB, auth.Config{
 			AdminEmail:        os.Getenv("ADMIN_EMAIL"),
 			AdminPasswordHash: os.Getenv("ADMIN_PASSWORD_HASH"),
@@ -114,8 +121,8 @@ func main() {
 	// Build the server.
 	a.srv = &http.Server{
 		Handler:      router(a, routes),
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 60 * time.Second,
 		IdleTimeout:  15 * time.Second,
 		ErrorLog:     errorLog,
 	}

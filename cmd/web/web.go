@@ -17,6 +17,7 @@ import (
 	"github.com/borumbombum/borum-api/internal/auth"
 	"github.com/borumbombum/borum-api/internal/battery"
 	"github.com/borumbombum/borum-api/internal/content"
+	"github.com/borumbombum/borum-api/internal/experiments"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -117,6 +118,13 @@ var funcMap = template.FuncMap{
 		return t.Format("January 2, 2006")
 	},
 	"deviceModel": battery.DeviceModel,
+	"dict": func(kv ...any) map[string]any {
+		m := make(map[string]any, len(kv)/2)
+		for i := 0; i+1 < len(kv); i += 2 {
+			m[fmt.Sprintf("%v", kv[i])] = kv[i+1]
+		}
+		return m
+	},
 	"batteryIcon": func(pct int, charging bool) string {
 		switch {
 		case charging:
@@ -141,7 +149,7 @@ func loadTemplates() error {
 		"login":   "login.html",
 		"404":     "404.html",
 	}
-	common := []string{"base.html", "header.html", "footer.html"}
+	common := []string{"base.html", "header.html", "footer.html", "love_bar.html"}
 	for name, page := range pages {
 		files := append(append([]string{}, common...), page)
 		paths := make([]string, 0, len(files))
@@ -155,11 +163,31 @@ func loadTemplates() error {
 		pageTemplates[name] = t
 	}
 
+	// Each experiment renders its own template (experiments/<dir>/index.html)
+	// against the shared experiment layout (experiments/layout.html) and the
+	// public base/header/footer. The layout owns the page chrome — hero, index
+	// link, admin intro text — and each experiment only defines its
+	// experiment_body block (its form) and optional page_scripts.
+	for _, exp := range experiments.All() {
+		paths := make([]string, 0, len(common)+2)
+		for _, f := range common {
+			paths = append(paths, filepath.Join(templateDir, f))
+		}
+		paths = append(paths, filepath.Join(templateDir, "experiments", "layout.html"))
+		paths = append(paths, filepath.Join(templateDir, "experiments", exp.Dir, "index.html"))
+		t, err := template.New("").Funcs(funcMap).ParseFiles(paths...)
+		if err != nil {
+			return fmt.Errorf("experiment template %s: %w", exp.Slug, err)
+		}
+		pageTemplates["experiment_"+exp.Slug] = t
+	}
+
 	// The /god pages share their own layout: god_base.html + the drawer
 	// partial, without the public header/footer.
 	godPages := map[string]string{
-		"god_list": "god_articles.html",
-		"god_form": "god_article_form.html",
+		"god_list":        "god_articles.html",
+		"god_form":        "god_article_form.html",
+		"god_experiments": "god_experiments.html",
 	}
 	godCommon := []string{"god_base.html", "god_drawer.html"}
 	for name, page := range godPages {
@@ -193,17 +221,26 @@ func renderPage(w http.ResponseWriter, status int, name string, data any) {
 // homeHandler renders the archive home page.
 func (a *app) homeHandler(w http.ResponseWriter, r *http.Request) {
 	arts := content.List(r.Context())
+	all := experiments.List(r.Context())
+	var enabled []experiments.Item
+	for _, it := range all {
+		if it.Enabled {
+			enabled = append(enabled, it)
+		}
+	}
 	data := struct {
 		pageData
-		Featured   *content.ArticleSummary
-		Articles   []content.ArticleSummary
-		Tags       []string
-		Principles []content.Principle
+		Featured    *content.ArticleSummary
+		Articles    []content.ArticleSummary
+		Tags        []string
+		Principles  []content.Principle
+		Experiments []experiments.Item
 	}{
-		pageData:   a.newPageData(r, "home"),
-		Articles:   arts,
-		Tags:       allTags(arts),
-		Principles: content.Principles(),
+		pageData:    a.newPageData(r, "home"),
+		Articles:    arts,
+		Tags:        allTags(arts),
+		Principles:  content.Principles(),
+		Experiments: enabled,
 	}
 	for i := range arts {
 		if arts[i].Featured {

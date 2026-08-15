@@ -20,14 +20,19 @@ Then fill in `TURSO_URL` and `TURSO_TOKEN` with your Turso database values.
 cmd/web/main.go    entry point: HTTP server bootstrap, graceful shutdown on SIGINT/SIGTERM
 cmd/web/routes.go  route table (apiRoutes) + chi router — single source of truth for endpoints
 cmd/web/handlers.go HTTP handlers as methods on *app (injected dependencies)
+cmd/web/middleware.go shared middleware: security headers, session peek, no directory listings
+cmd/web/experiments_handlers.go the /experiments routes: image conversion (capped + rate-limited)
 cmd/web/web.go    web site views: template loading, page handlers, shared view model
-cmd/web/templates/ Go templates: base, header, footer, home, article, tag, 404
+cmd/web/templates/ Go templates: base, header, footer, home, article, tag, 404, experiments
 cmd/web/server.go startup banner
 internal/db/      schema migrations (embedded SQL, applied at startup, tracked in schema_migrations)
 internal/content/  site data accessors and shapes; articles come from the Turso database via a
                     61-minute in-memory cache (per-article cache capped at ~30MB, LRU eviction),
                     principles stay embedded
 internal/battery/  system battery snapshot used by the header
+internal/experiments/ experiment pages and image-conversion wiring (front matter, intro, progress)
+internal/imgconv/  image decoding/encoding helpers with pixel and edge caps
+internal/ratelimit/ sliding-window rate limiter (login + image conversion), keys pruned when idle
 internal/tasks/    minimal in-process scheduler for background jobs
 
 ## Styling
@@ -49,6 +54,14 @@ cascade order at server startup and served as a single `/styles.css` by
 
 The concat order defines the cascade: theme → base → components → prose →
 animations → breakpoints → utilities.
+
+### Loading indicator color
+
+The top sweep bar that shows during page navigations is colored by two tokens in
+`static/css/theme.css`: `--color-mauve` (light end of the sweep) and
+`--color-mauve-deep` (dark end). Change those two values and restart the server
+to restyle it. The bar's shape and animation live in `static/css/animations.css`
+(`.borum-loader-pill` and the `loader-sweep` keyframes).
 
 ## Port
 
@@ -99,8 +112,12 @@ signup). Credentials come from the environment:
 
 Sessions are stored in the `sessions` table (only SHA-256 token hashes; the
 random token itself lives in an HttpOnly, SameSite=Lax cookie, marked `Secure`
-automatically when the request arrives over HTTPS). Login attempts are
-rate-limited. The `/god` forms are protected with per-session CSRF tokens.
+when served over HTTPS — the proxy's `X-Forwarded-Proto` header is trusted only
+from loopback peers, so a directly exposed server can't be spoofed). Login
+attempts are rate-limited, the `/god` forms are protected with per-session CSRF
+tokens, and `/god` + `/login` send `X-Frame-Options: DENY`, `nosniff` and
+`no-store`. The image-conversion endpoint is per-client rate-limited and rejects
+uploads above 40 megapixels or a 10,000px edge before decoding.
 
 Signed in, an "edit →" link appears on `/blog/{slug}`, and `/god/articles`
 lists every article with create/edit forms. The code is built for more login

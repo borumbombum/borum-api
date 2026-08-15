@@ -28,6 +28,8 @@ func (a *app) apiRoutes() []apiRoute {
 		{http.MethodGet, "/", a.homeHandler},
 		{http.MethodGet, "/blog/{slug}", a.articleHandler},
 		{http.MethodGet, "/tags/{tag}", a.tagHandler},
+		{http.MethodGet, "/experiments/{slug}", a.experimentHandler},
+		{http.MethodPost, "/experiments/img2webp/convert", a.img2webpConvertHandler},
 		{http.MethodGet, "/api/health", a.healthHandler},
 		{http.MethodGet, "/data/articles.json", a.articlesJSONHandler},
 
@@ -38,6 +40,10 @@ func (a *app) apiRoutes() []apiRoute {
 
 		{http.MethodGet, "/god", a.requirePage(a.godHandler)},
 		{http.MethodGet, "/god/articles", a.requirePage(a.godArticlesHandler)},
+		{http.MethodGet, "/god/experiments", a.requirePage(a.godExperimentsHandler)},
+		{http.MethodPost, "/god/experiments/{slug}/toggle", a.requirePage(a.godExperimentToggleHandler)},
+		{http.MethodPost, "/god/experiments/{slug}/move", a.requirePage(a.godExperimentMoveHandler)},
+		{http.MethodPost, "/god/experiments/{slug}/intro", a.requirePage(a.godExperimentIntroHandler)},
 		{http.MethodGet, "/god/articles/new", a.requirePage(a.godArticleNewHandler)},
 		{http.MethodPost, "/god/articles", a.requirePage(a.godArticleCreateHandler)},
 		{http.MethodGet, "/god/articles/{slug}/edit", a.requirePage(a.godArticleEditHandler)},
@@ -52,6 +58,7 @@ func router(a *app, routes []apiRoute) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(securityHeaders)
 	r.Use(a.auth.Peek)
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"http://localhost:5173"},
@@ -65,9 +72,12 @@ func router(a *app, routes []apiRoute) http.Handler {
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch {
+			case strings.HasPrefix(r.URL.Path, "/assets/experiments/"):
+				// Experiment scripts change with the code; never cache them.
+				w.Header().Set("Cache-Control", "no-cache")
 			case strings.HasPrefix(r.URL.Path, "/assets/"):
 				w.Header().Set("Cache-Control", "public, max-age=604800, stale-while-revalidate=86400")
-			case r.URL.Path == "/app.js" || r.URL.Path == "/god.js" || r.URL.Path == "/god-editor.js" || r.URL.Path == "/styles.css" || strings.HasPrefix(r.URL.Path, "/vendor/"):
+			case r.URL.Path == "/app.js" || r.URL.Path == "/god.js" || r.URL.Path == "/borum-loader.js" || r.URL.Path == "/god-editor.js" || r.URL.Path == "/styles.css" || strings.HasPrefix(r.URL.Path, "/vendor/"):
 				w.Header().Set("Cache-Control", "no-cache")
 			}
 			next.ServeHTTP(w, r)
@@ -80,11 +90,12 @@ func router(a *app, routes []apiRoute) http.Handler {
 	}
 
 	// Static assets served from disk (no embed).
-	fs := http.FileServer(http.Dir("static"))
+	fs := noDirListing(http.FileServer(http.Dir("static")))
 	r.Handle("/assets/*", http.StripPrefix("/", fs))
 	r.Handle("/vendor/*", http.StripPrefix("/", fs))
 	r.Handle("/app.js", fs)
 	r.Handle("/god.js", fs)
+	r.Handle("/borum-loader.js", fs)
 	r.Handle("/god-editor.js", fs)
 	r.Handle("/favicon.svg", fs)
 

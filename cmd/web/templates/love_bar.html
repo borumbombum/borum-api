@@ -1,0 +1,12 @@
+{{define "love_bar"}}
+<div class="mt-4 flex items-center justify-between">
+    <a href="/">&larr; index</a>
+    <div class="flex items-center gap-4">
+        {{if .LoggedIn}}<a href="{{.EditHref}}" class="border-b-0! font-mono text-ink-soft hover:text-ink">edit &rarr;</a>{{end}}
+        <button data-love data-slug="{{.LoveSlug}}" data-base="{{.LoveBase}}" type="button" aria-pressed="false" class="heart-btn cursor-pointer inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono tracking-wide transition-colors border-[#dc3545]/40 hover:border-[#dc3545]/50 text-[12px]">
+            <i data-lucide="heart" width="16" height="16" stroke-width="2" class="text-ink-soft"></i>
+            <span data-count class="text-ink-soft">{{.LoveBase}}</span>
+        </button>
+    </div>
+</div>
+{{end}}

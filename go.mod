@@ -10,3 +10,8 @@ require (
 	golang.org/x/crypto v0.55.0
 	turso.tech/database/tursogo-serverless v0.0.0-20260807204944-a7c09f13aaf5
 )
+
+require (
+	github.com/KarpelesLab/gowebp v0.1.1 // indirect
+	golang.org/x/image v0.24.0 // indirect
+)

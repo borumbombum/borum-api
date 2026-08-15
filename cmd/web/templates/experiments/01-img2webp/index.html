@@ -1,0 +1,56 @@
+{{define "experiment_body"}}
+<div class="wrapper wrapper-wide relative pb-2">
+    <p class="pb-3 font-mono text-[11px] text-faint">limit — {{.ConvertPerMin}} conversions per minute per visitor · max {{.MaxPixelsMP}} MP / {{.MaxEdge}}px edge · {{.MaxUploadMB}} MB file</p>
+    <form method="post" action="/experiments/img2webp/convert" enctype="multipart/form-data" class="flex w-full flex-col gap-4" data-convert-form>
+        <label class="flex flex-col gap-1 font-mono text-[13px] text-ink-soft">
+            image (png or jpeg)
+            <input name="image" type="file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" required
+                class="w-full border border-hairline bg-transparent p-2 font-mono text-[13px] text-ink file:mr-3 file:border-0 file:bg-paper-dim file:px-3 file:py-1.5 file:font-mono file:text-[12px] file:text-ink-soft hover:file:text-ink focus:border-ink focus:outline-none" />
+            <span data-file-name class="font-mono text-[11px] text-faint"></span>
+        </label>
+
+        <details class="font-mono text-[13px] text-ink-soft">
+            <summary class="cursor-pointer select-none hover:text-ink">advanced</summary>
+            <div class="mt-3 flex flex-col gap-4">
+                <label class="flex flex-col gap-1 text-[12px]">
+                    quality — <span data-quality-value class="text-ink">80</span>
+                    <input name="quality" type="range" min="1" max="100" value="80" data-quality
+                        class="w-full accent-[var(--color-ink)]" />
+                </label>
+                <label class="flex flex-col gap-1 text-[12px]">
+                    mode
+                    <select name="mode" class="w-full border border-hairline bg-transparent p-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none">
+                        <option value="lossy" selected>lossy (recommended)</option>
+                        <option value="lossless">lossless</option>
+                        <option value="auto">auto — keep the smaller</option>
+                    </select>
+                </label>
+                <label class="flex flex-col gap-1 text-[12px]">
+                    method (0 = fastest, 6 = best compression)
+                    <select name="method" class="w-full border border-hairline bg-transparent p-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none">
+                        <option value="0">0 — fastest</option>
+                        <option value="4" selected>4 — balanced</option>
+                        <option value="6">6 — best compression</option>
+                    </select>
+                </label>
+            </div>
+        </details>
+
+        <div data-progress class="hidden w-full">
+            <div class="h-1 w-full overflow-hidden rounded-full bg-paper-dim">
+                <div data-progress-fill class="h-1 w-0 bg-ink transition-all duration-150 ease-out"></div>
+            </div>
+            <p data-progress-label class="mt-1 font-mono text-[11px] text-faint"></p>
+        </div>
+        <p data-convert-status class="hidden font-mono text-[12px] text-red-600" role="alert"></p>
+
+        <button type="submit" data-convert-submit class="flex w-fit cursor-pointer items-center gap-2 self-start bg-ink px-4 py-2 font-mono text-[12px] text-paper hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60">
+            <span data-spinner class="hidden h-3 w-3 shrink-0 animate-spin rounded-full border border-paper border-t-transparent"></span>
+            <span data-convert-label>convert &amp; download</span>
+        </button>
+    </form>
+</div>
+{{end}}
+{{define "page_scripts"}}
+<script src="/assets/experiments/01-img2webp/img2webp.js"></script>
+{{end}}

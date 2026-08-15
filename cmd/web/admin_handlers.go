@@ -9,19 +9,21 @@ import (
 
 	"github.com/borumbombum/borum-api/internal/auth"
 	"github.com/borumbombum/borum-api/internal/content"
+	"github.com/borumbombum/borum-api/internal/experiments"
 	"github.com/go-chi/chi/v5"
 )
 
 // godData is the view model for every /god page.
 type godData struct {
-	Version  string
-	LoggedIn bool
-	CSRF     string
-	Error    string
-	IsNew    bool
-	Articles []content.ArticleSummary
-	Article  *content.Article
-	Tags     string // comma-separated, for the form input
+	Version     string
+	LoggedIn    bool
+	CSRF        string
+	Error       string
+	IsNew       bool
+	Articles    []content.ArticleSummary
+	Article     *content.Article
+	Tags        string // comma-separated, for the form input
+	Experiments []experiments.Item
 }
 
 // newGodData builds the shared admin view model, minting a CSRF token bound to
@@ -57,6 +59,81 @@ func (a *app) godHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/god/articles", http.StatusFound)
 }
 
+// godExperimentsHandler renders the admin experiment list: every hardcoded
+// experiment with its visibility toggle and up/down move controls.
+func (a *app) godExperimentsHandler(w http.ResponseWriter, r *http.Request) {
+	data := a.newGodData(r, false)
+	data.Experiments = experiments.List(r.Context())
+	a.renderGodPage(w, http.StatusOK, "god_experiments", data)
+}
+
+// godExperimentToggleHandler shows or hides an experiment, then returns to
+// the list. The target state arrives as a hidden form field.
+func (a *app) godExperimentToggleHandler(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
+	data := a.newGodData(r, false)
+	if !a.validCSRF(r) {
+		data.Error = "invalid request token, try again"
+		data.Experiments = experiments.List(r.Context())
+		a.renderGodPage(w, http.StatusForbidden, "god_experiments", data)
+		return
+	}
+	if err := experiments.SetEnabled(r.Context(), slug, r.FormValue("enabled") == "1"); err != nil {
+		a.errorLogger.Print(err.Error())
+		data.Error = "could not update the experiment"
+		data.Experiments = experiments.List(r.Context())
+		a.renderGodPage(w, http.StatusInternalServerError, "god_experiments", data)
+		return
+	}
+	http.Redirect(w, r, "/god/experiments", http.StatusSeeOther)
+}
+
+// godExperimentIntroHandler saves the admin-written intro text that renders
+// above the experiment's form, then returns to the list.
+func (a *app) godExperimentIntroHandler(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
+	data := a.newGodData(r, false)
+	if !a.validCSRF(r) {
+		data.Error = "invalid request token, try again"
+		data.Experiments = experiments.List(r.Context())
+		a.renderGodPage(w, http.StatusForbidden, "god_experiments", data)
+		return
+	}
+	if err := experiments.UpdateIntro(r.Context(), slug, r.FormValue("intro")); err != nil {
+		a.errorLogger.Print(err.Error())
+		data.Error = "could not save the experiment intro"
+		data.Experiments = experiments.List(r.Context())
+		a.renderGodPage(w, http.StatusInternalServerError, "god_experiments", data)
+		return
+	}
+	http.Redirect(w, r, "/god/experiments", http.StatusSeeOther)
+}
+
+// godExperimentMoveHandler shifts an experiment one position up or down in
+// the home page list. Direction arrives as dir=up or dir=down.
+func (a *app) godExperimentMoveHandler(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
+	data := a.newGodData(r, false)
+	if !a.validCSRF(r) {
+		data.Error = "invalid request token, try again"
+		data.Experiments = experiments.List(r.Context())
+		a.renderGodPage(w, http.StatusForbidden, "god_experiments", data)
+		return
+	}
+	dir := -1
+	if r.FormValue("dir") == "down" {
+		dir = 1
+	}
+	if err := experiments.Move(r.Context(), slug, dir); err != nil {
+		a.errorLogger.Print(err.Error())
+		data.Error = "could not move the experiment"
+		data.Experiments = experiments.List(r.Context())
+		a.renderGodPage(w, http.StatusInternalServerError, "god_experiments", data)
+		return
+	}
+	http.Redirect(w, r, "/god/experiments", http.StatusSeeOther)
+}
+
 // godArticlesHandler renders the admin article list.
 func (a *app) godArticlesHandler(w http.ResponseWriter, r *http.Request) {
 	data := a.newGodData(r, false)
@@ -75,7 +152,7 @@ func (a *app) godArticleNewHandler(w http.ResponseWriter, r *http.Request) {
 // the list. Re-renders the form with an error when validation fails.
 func (a *app) godArticleCreateHandler(w http.ResponseWriter, r *http.Request) {
 	data := a.newGodData(r, true)
-	if !a.validCSRF(r, data.CSRF) {
+	if !a.validCSRF(r) {
 		data.Error = "invalid request token, try again"
 		a.renderGodPage(w, http.StatusForbidden, "god_form", data)
 		return
@@ -118,7 +195,7 @@ func (a *app) godArticleEditHandler(w http.ResponseWriter, r *http.Request) {
 func (a *app) godArticleUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 	data := a.newGodData(r, false)
-	if !a.validCSRF(r, data.CSRF) {
+	if !a.validCSRF(r) {
 		data.Error = "invalid request token, try again"
 		data.Article = content.GetArticle(r.Context(), slug)
 		a.renderGodPage(w, http.StatusForbidden, "god_form", data)
@@ -134,6 +211,12 @@ func (a *app) godArticleUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	art.Slug = slug
+	// Preserve the existing love count: it is not an editable field, and
+	// content.Save upserts it, so editing an article would otherwise reset
+	// it to zero.
+	if existing := content.GetArticle(r.Context(), slug); existing != nil {
+		art.InitialLove = existing.InitialLove
+	}
 	if err := content.Save(r.Context(), art); err != nil {
 		a.errorLogger.Print(err.Error())
 		data.Error = "could not save the article"
@@ -150,7 +233,7 @@ func (a *app) godArticleUpdateHandler(w http.ResponseWriter, r *http.Request) {
 func (a *app) godArticleDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 	data := a.newGodData(r, false)
-	if !a.validCSRF(r, data.CSRF) {
+	if !a.validCSRF(r) {
 		data.Error = "invalid request token, try again"
 		data.Articles = content.List(r.Context())
 		a.renderGodPage(w, http.StatusForbidden, "god_list", data)
@@ -167,7 +250,7 @@ func (a *app) godArticleDeleteHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // validCSRF checks the form's _csrf field against the caller's session token.
-func (a *app) validCSRF(r *http.Request, _ string) bool {
+func (a *app) validCSRF(r *http.Request) bool {
 	token := a.sessionToken(r)
 	if token == "" {
 		return false

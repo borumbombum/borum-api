@@ -66,6 +66,31 @@
 .rise-in {
     animation: rise-in 0.9s var(--ease-shizuka) both;
 }
+@keyframes loader-sweep {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+.borum-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    z-index: 99999;
+    pointer-events: none;
+    overflow: hidden;
+}
+.borum-loader-pill {
+    display: block;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, var(--color-mauve), var(--color-mauve-deep), transparent);
+    animation: loader-sweep 1.1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
 @keyframes modal-in {
     from {
         opacity: 0;
@@ -81,7 +106,8 @@
 }
 @media (prefers-reduced-motion: reduce) {
     .rise-in,
-    .modal-in {
+    .modal-in,
+    .borum-loader-pill {
         animation: none;
     }
 }

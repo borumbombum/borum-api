@@ -1,3 +1,7 @@
+# Security
+
+- Read `SECURITY.md` before any security work. It is the audit report and to-do list. Remove items only after they are implemented and verified, and never remove unfixed items.
+
 ## Response Style
 
 - Use Plain Language for your answers.
@@ -30,6 +34,12 @@
 - If a media query only affects one component, co-locate it in that component's file (e.g. `.article-table` lives in `prose.css`). Put global responsive rules in `breakpoints.css`.
 - Remember the concat order — theme, base, components, prose, animations, breakpoints, utilities — when a rule must win. Equal-specificity rules later in the list win.
 
+# Editor
+
+- Rich-HTML content fields (article body, experiment intro) must use the TipTap editor component, never a plain textarea. Copy the `editor-shell` markup from `god_article_form.html` and load `/vendor/tiptap/tiptap.bundle.js` + `/god-editor.js` in the page's `page_scripts` block.
+- `god-editor.js` wires every `[data-editor]` mount on a page. Each mount needs a unique `data-editor` id that matches the id of the hidden textarea it syncs to (e.g. `intro-{{.Slug}}` for per-row experiment intros).
+- Plain-text metadata fields (e.g. the article excerpt, shown as a plain subtitle) stay plain inputs; only HTML-rendered content gets an editor.
+
 # Command Palette
 
 - The palette opens with the `:` key. The input starts prefilled with `:`, so users type `:home`, `:q`, etc. directly.
@@ -45,6 +55,15 @@
 - Search modes live in `paletteModes` (e.g. `#tag` search, article title search). Each mode is `{ hint, test(v), search(v) }`; the first mode whose `test` passes fills the results.
 - Commands are checked before modes, so a command match always wins (e.g. `:#5` is the principle jump, not a tag search).
 - The palette reads article/tag data from `/data/articles.json` at load; tags are compiled into `paletteTags`. No new data file for tags.
+
+# Tasks
+
+- Task details live in `tasks/` — one file per task, named `NNN-short-slug.md`.
+- This list mirrors those files and must stay in sync. See the `tasks` skill for the full workflow.
+- Status markers: `[TODO]` (not started), `[IN_PROGRESS]` (agent working on it), `[DONE]` (verified complete).
+- Set `[IN_PROGRESS]` when you start a task, `[DONE]` when done — in both this list and the task file.
+
+- 001 [IN_PROGRESS] Top loading indicator between page navigations
 
 # Versioning
 

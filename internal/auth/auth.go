@@ -11,6 +11,8 @@ import (
 	"errors"
 	"net/http"
 	"time"
+
+	"github.com/borumbombum/borum-api/internal/ratelimit"
 )
 
 // ErrInvalidCredentials is returned for any failed login attempt. It is
@@ -50,7 +52,7 @@ type Config struct {
 type Service struct {
 	db         *sql.DB
 	cfg        Config
-	limiter    *loginLimiter
+	limiter    *ratelimit.Limiter
 	csrfSecret []byte
 }
 
@@ -60,7 +62,7 @@ func New(db *sql.DB, cfg Config) *Service {
 	return &Service{
 		db:         db,
 		cfg:        cfg,
-		limiter:    newLoginLimiter(),
+		limiter:    ratelimit.New(loginMaxAttempts, loginWindow),
 		csrfSecret: randomBytes(32),
 	}
 }
@@ -154,8 +156,15 @@ func (s *Service) Logout(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+// Login rate limits: at most loginMaxAttempts failed-or-any login attempts per
+// loginWindow, keyed per client (see clientIP) plus the submitted email.
+const (
+	loginMaxAttempts = 5
+	loginWindow      = time.Minute
+)
+
 // AllowLogin reports whether another login attempt from this client fits the
 // rate limit. Callers should check it before verifying credentials.
 func (s *Service) AllowLogin(key string) bool {
-	return s.limiter.allow(key)
+	return s.limiter.Allow(key)
 }
