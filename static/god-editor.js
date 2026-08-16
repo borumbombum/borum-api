@@ -38,7 +38,8 @@
             blockquote: 'Quote', codeBlock: 'Code',
             link: 'Link', image: 'Image',
             undo: 'Undo2', redo: 'Redo2',
-            source: 'FileCode'
+            source: 'FileCode',
+            expand: 'Maximize2', collapse: 'Minimize2'
         };
         var active = [
             ['bold'], ['italic'], ['underline'], ['strike'],
@@ -134,6 +135,34 @@
         button('redo', 'redo', function (e) { e.chain().focus().redo().run(); });
         sep();
         button('source', 'edit html', toggleSource);
+        sep();
+
+        /* expand / collapse */
+        var expandBtn = doc.createElement('button');
+        expandBtn.type = 'button';
+        expandBtn.title = 'expand editor';
+        expandBtn.setAttribute('aria-label', 'expand editor');
+        expandBtn.setAttribute('data-editor-cmd', 'expand');
+        expandBtn.appendChild(icon(ICON.expand));
+        expandBtn.addEventListener('click', function () { toggleExpand(); });
+        toolbar.appendChild(expandBtn);
+
+        function toggleExpand() {
+            var shell = mount.parentNode;
+            var isExpanded = shell.classList.toggle('expanded');
+            expandBtn.setAttribute('data-editor-cmd', isExpanded ? 'collapse' : 'expand');
+            expandBtn.setAttribute('title', isExpanded ? 'collapse editor' : 'expand editor');
+            expandBtn.setAttribute('aria-label', isExpanded ? 'collapse editor' : 'expand editor');
+            expandBtn.innerHTML = '';
+            expandBtn.appendChild(icon(isExpanded ? ICON.collapse : ICON.expand));
+            if (win.lucide && win.lucide.createIcons) win.lucide.createIcons();
+        }
+
+        doc.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && mount.parentNode.classList.contains('expanded')) {
+                toggleExpand();
+            }
+        });
 
         // Source mode swaps the WYSIWYG view for the raw textarea. The form
         // textarea is always the source of truth, so submit needs no handler.

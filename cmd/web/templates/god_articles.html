@@ -9,16 +9,17 @@
     </div>
     <a href="/god/articles/new" class="btn btn-primary btn-sm">+ new</a>
 </header>
-<main class="wrapper pt-12">
+<main class="!p-5 pt-12">
     {{if .Error}}
     <p class="mb-4 border border-hairline-strong px-3 py-2 font-mono text-[12px] text-red-600">{{.Error}}</p>
     {{end}}
     <ul class="flex flex-col">
         {{range .Articles}}
-        <li class="flex items-center justify-between border-b border-hairline py-3">
+        <li class="flex justify-between border-b border-hairline py-3">
             <div>
                 <a href="/blog/{{.Slug}}" class="border-b-0 font-weight-600 hover:opacity-60">{{.Title}}</a>
-                <span class="ml-2 font-mono text-[11px] opacity-50">{{.Slug}}</span>
+                <br>
+                <span class="font-mono text-[11px] opacity-50">{{.Slug}}</span>
                 {{if eq .Status "draft"}}<span class="ml-2 inline-block rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 font-mono text-[10px] text-amber-600 dark:text-amber-400">draft</span>{{end}}
             </div>
             <div class="flex items-center gap-3">

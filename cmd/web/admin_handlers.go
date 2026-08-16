@@ -388,7 +388,7 @@ func (a *app) godPreviewTokenHandler(w http.ResponseWriter, r *http.Request) {
 		SessionID: sess,
 	}
 	previewMu.Unlock()
-	http.Redirect(w, r, "/god/preview/"+token, http.StatusSeeOther)
+	http.Redirect(w, r, "/god/articles/preview/"+token, http.StatusSeeOther)
 }
 
 // godPreviewHandler renders a draft article for preview. The token must be

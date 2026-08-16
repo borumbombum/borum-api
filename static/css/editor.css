@@ -97,3 +97,28 @@
     border: none;
     border-top: 1px solid var(--color-hairline);
 }
+
+/* Expanded (fullscreen) editor */
+.editor-shell.expanded {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    border: none;
+    border-radius: 0;
+    background: var(--background);
+    overflow: hidden;
+}
+
+.editor-shell.expanded .editor-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--background);
+}
+
+.editor-shell.expanded [data-editor] {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    padding: 2rem;
+}

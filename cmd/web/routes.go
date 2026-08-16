@@ -54,7 +54,7 @@ func (a *app) apiRoutes() []apiRoute {
 		{http.MethodPost, "/god/articles/{slug}/edit", a.requirePage(a.godArticleUpdateHandler)},
 		{http.MethodPost, "/god/articles/{slug}/delete", a.requirePage(a.godArticleDeleteHandler)},
 		{http.MethodPost, "/god/articles/{slug}/preview", a.requirePage(a.godPreviewTokenHandler)},
-		{http.MethodGet, "/god/preview/{token}", a.requirePage(a.godPreviewHandler)},
+		{http.MethodGet, "/god/articles/preview/{token}", a.requirePage(a.godPreviewHandler)},
 	}
 }
 
@@ -89,6 +89,8 @@ func router(a *app, routes []apiRoute) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	})
+
+	r.Use(middleware.Compress(5))
 
 	// Register all routes
 	for _, rt := range routes {
