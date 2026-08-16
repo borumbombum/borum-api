@@ -47,6 +47,7 @@ var cssFiles = []string{
 	"admin.css",
 	"prose.css",
 	"editor.css",
+	"highlight.css",
 	"animations.css",
 	"breakpoints.css",
 	"utilities.css",

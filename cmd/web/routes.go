@@ -38,6 +38,9 @@ func (a *app) apiRoutes() []apiRoute {
 		{http.MethodPost, "/api/v1/auth/logout", a.requireAPI(a.logoutHandler)},
 		{http.MethodGet, "/api/v1/auth/me", a.meHandler},
 
+		{http.MethodPost, "/api/v1/articles/draft", a.requireAPI(a.articleCreateDraftHandler)},
+		{http.MethodPut, "/api/v1/articles/{slug}/draft", a.requireAPI(a.articleUpdateDraftHandler)},
+
 		{http.MethodGet, "/god", a.requirePage(a.godHandler)},
 		{http.MethodGet, "/god/articles", a.requirePage(a.godArticlesHandler)},
 		{http.MethodGet, "/god/experiments", a.requirePage(a.godExperimentsHandler)},
@@ -46,9 +49,12 @@ func (a *app) apiRoutes() []apiRoute {
 		{http.MethodPost, "/god/experiments/{slug}/intro", a.requirePage(a.godExperimentIntroHandler)},
 		{http.MethodGet, "/god/articles/new", a.requirePage(a.godArticleNewHandler)},
 		{http.MethodPost, "/god/articles", a.requirePage(a.godArticleCreateHandler)},
+		{http.MethodPost, "/god/articles/draft", a.requirePage(a.godArticleDraftHandler)},
 		{http.MethodGet, "/god/articles/{slug}/edit", a.requirePage(a.godArticleEditHandler)},
 		{http.MethodPost, "/god/articles/{slug}/edit", a.requirePage(a.godArticleUpdateHandler)},
 		{http.MethodPost, "/god/articles/{slug}/delete", a.requirePage(a.godArticleDeleteHandler)},
+		{http.MethodPost, "/god/articles/{slug}/preview", a.requirePage(a.godPreviewTokenHandler)},
+		{http.MethodGet, "/god/preview/{token}", a.requirePage(a.godPreviewHandler)},
 	}
 }
 
@@ -77,7 +83,7 @@ func router(a *app, routes []apiRoute) http.Handler {
 				w.Header().Set("Cache-Control", "no-cache")
 			case strings.HasPrefix(r.URL.Path, "/assets/"):
 				w.Header().Set("Cache-Control", "public, max-age=604800, stale-while-revalidate=86400")
-			case r.URL.Path == "/app.js" || r.URL.Path == "/god.js" || r.URL.Path == "/borum-loader.js" || r.URL.Path == "/god-editor.js" || r.URL.Path == "/styles.css" || strings.HasPrefix(r.URL.Path, "/vendor/"):
+			case r.URL.Path == "/app.js" || r.URL.Path == "/god.js" || r.URL.Path == "/borum-loader.js" || r.URL.Path == "/god-editor.js" || r.URL.Path == "/god-autosave.js" || r.URL.Path == "/styles.css" || strings.HasPrefix(r.URL.Path, "/vendor/"):
 				w.Header().Set("Cache-Control", "no-cache")
 			}
 			next.ServeHTTP(w, r)
@@ -97,6 +103,7 @@ func router(a *app, routes []apiRoute) http.Handler {
 	r.Handle("/god.js", fs)
 	r.Handle("/borum-loader.js", fs)
 	r.Handle("/god-editor.js", fs)
+	r.Handle("/god-autosave.js", fs)
 	r.Handle("/favicon.svg", fs)
 
 	// /styles.css is the concat of static/css/*.css, computed at startup

@@ -41,6 +41,34 @@
         if (win.BorumLoader) win.BorumLoader.show();
     }
 
+    /* ------------------------------------------------ clipboard */
+    function copyToClipboard(text, btn) {
+        if (!btn) return;
+        var idle = btn.querySelector('[data-copy-idle]');
+        var loading = btn.querySelector('[data-copy-loading]');
+        var success = btn.querySelector('[data-copy-success]');
+        if (idle) idle.hidden = true;
+        if (loading) loading.hidden = false;
+        if (success) success.hidden = true;
+        btn.disabled = true;
+        navigator.clipboard.writeText(text).then(function () {
+            if (loading) loading.hidden = true;
+            if (success) success.hidden = false;
+            setTimeout(function () {
+                if (success) success.hidden = true;
+                if (idle) idle.hidden = false;
+                btn.disabled = false;
+                mountIcons();
+            }, 2000);
+        }).catch(function () {
+            if (loading) loading.hidden = true;
+            if (idle) idle.hidden = false;
+            btn.disabled = false;
+            mountIcons();
+        });
+    }
+    win.copyToClipboard = copyToClipboard;
+
     /* ------------------------------------------------ lucide icons */
     function mountIcons() {
         if (win.lucide && win.lucide.createIcons) {
@@ -1084,4 +1112,24 @@
         '.pr-detail-anim{animation:prSlide .3s var(--ease-shizuka, cubic-bezier(.22,1,.36,1)) both;}' +
         '@keyframes prSlide{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}';
     doc.head.appendChild(style);
+
+    /* ------------------------------------------------ code block copy buttons */
+    var codeTpl = $('#code-block-tpl');
+    if (codeTpl) {
+        $$('pre').forEach(function (pre) {
+            var code = pre.querySelector('code');
+            if (!code) return;
+            var frag = codeTpl.content.cloneNode(true);
+            var wrap = frag.querySelector('.relative');
+            var placeholder = wrap.querySelector('pre');
+            var btn = frag.querySelector('button');
+            if (placeholder) placeholder.remove();
+            pre.parentNode.replaceChild(frag, pre);
+            wrap.appendChild(pre);
+            btn.addEventListener('click', function () {
+                copyToClipboard(code.textContent, btn);
+            });
+        });
+        mountIcons();
+    }
 })();

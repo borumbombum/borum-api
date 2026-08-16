@@ -26,6 +26,7 @@ type Article struct {
 	Star         bool     `json:"star"`
 	Featured     bool     `json:"featured"`
 	Body         string   `json:"body"`
+	Status       string   `json:"status"`
 }
 
 // ArticleSummary is the lightweight row used by the archive (home and tag)
@@ -39,6 +40,7 @@ type ArticleSummary struct {
 	Featured     bool
 	Image        string
 	ImageCaption string
+	Status       string
 }
 
 // PaletteItem is the minimal shape served to the command palette.
@@ -140,6 +142,60 @@ func GetArticle(ctx context.Context, slug string) *Article {
 	return &a
 }
 
+// ListAll returns every article summary (draft and published) for the admin
+// list. It does not cache because it is only called from /god pages.
+func ListAll(ctx context.Context) []ArticleSummary {
+	rows, err := store.db.QueryContext(ctx, `SELECT slug, title, date, tags,
+		star, featured, image, image_caption, status
+		FROM articles ORDER BY date DESC`)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	var list []ArticleSummary
+	for rows.Next() {
+		var (
+			s    ArticleSummary
+			tags string
+			star int
+			feat int
+		)
+		if err := rows.Scan(&s.Slug, &s.Title, &s.Date, &tags,
+			&star, &feat, &s.Image, &s.ImageCaption, &s.Status); err != nil {
+			return nil
+		}
+		s.Tags = unmarshalTags(tags)
+		s.Star = star != 0
+		s.Featured = feat != 0
+		list = append(list, s)
+	}
+	return list
+}
+
+// GetArticleAny returns the full article for the given slug regardless of
+// status, for admin edit pages. Uncached because it is only called from /god.
+func GetArticleAny(ctx context.Context, slug string) *Article {
+	var (
+		a        Article
+		tags     string
+		star     int
+		featured int
+	)
+	err := store.db.QueryRowContext(ctx, `SELECT slug, title, subtitle, date, tags,
+		excerpt, image, image_caption, initial_love, star, featured, body, status
+		FROM articles WHERE slug = ?`, slug).Scan(
+		&a.Slug, &a.Title, &a.Subtitle, &a.Date, &tags,
+		&a.Excerpt, &a.Image, &a.ImageCaption, &a.InitialLove, &star, &featured, &a.Body, &a.Status)
+	if err != nil {
+		return nil
+	}
+	a.Tags = unmarshalTags(tags)
+	a.Star = star != 0
+	a.Featured = featured != 0
+	return &a
+}
+
 // articleCache is a per-slug TTL cache for full articles, bounded in memory
 // by maxArticleCacheBytes with least-recently-used eviction.
 type articleCache struct {
@@ -234,10 +290,11 @@ func sizeOf(a Article) int {
 }
 
 // querySummaries loads the archive columns only, never the heavy fields.
+// Only published articles are included.
 func querySummaries(ctx context.Context) ([]ArticleSummary, error) {
 	rows, err := store.db.QueryContext(ctx, `SELECT slug, title, date, tags,
-		star, featured, image, image_caption
-		FROM articles ORDER BY date DESC`)
+		star, featured, image, image_caption, status
+		FROM articles WHERE status = 'published' ORDER BY date DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +309,7 @@ func querySummaries(ctx context.Context) ([]ArticleSummary, error) {
 			feat int
 		)
 		if err := rows.Scan(&s.Slug, &s.Title, &s.Date, &tags,
-			&star, &feat, &s.Image, &s.ImageCaption); err != nil {
+			&star, &feat, &s.Image, &s.ImageCaption, &s.Status); err != nil {
 			return nil, err
 		}
 		s.Tags = unmarshalTags(tags)
@@ -264,8 +321,9 @@ func querySummaries(ctx context.Context) ([]ArticleSummary, error) {
 }
 
 // queryPalette loads only the fields the command palette reads.
+// Only published articles are included.
 func queryPalette(ctx context.Context) ([]PaletteItem, error) {
-	rows, err := store.db.QueryContext(ctx, `SELECT slug, title, tags FROM articles`)
+	rows, err := store.db.QueryContext(ctx, `SELECT slug, title, tags FROM articles WHERE status = 'published'`)
 	if err != nil {
 		return nil, err
 	}
@@ -287,6 +345,7 @@ func queryPalette(ctx context.Context) ([]PaletteItem, error) {
 }
 
 // queryArticle loads one full row by slug (primary key lookup).
+// Only published articles are returned.
 func queryArticle(ctx context.Context, slug string) (Article, error) {
 	var (
 		a        Article
@@ -295,10 +354,10 @@ func queryArticle(ctx context.Context, slug string) (Article, error) {
 		featured int
 	)
 	err := store.db.QueryRowContext(ctx, `SELECT slug, title, subtitle, date, tags,
-		excerpt, image, image_caption, initial_love, star, featured, body
-		FROM articles WHERE slug = ?`, slug).Scan(
+		excerpt, image, image_caption, initial_love, star, featured, body, status
+		FROM articles WHERE slug = ? AND status = 'published'`, slug).Scan(
 		&a.Slug, &a.Title, &a.Subtitle, &a.Date, &tags,
-		&a.Excerpt, &a.Image, &a.ImageCaption, &a.InitialLove, &star, &featured, &a.Body)
+		&a.Excerpt, &a.Image, &a.ImageCaption, &a.InitialLove, &star, &featured, &a.Body, &a.Status)
 	if err != nil {
 		return Article{}, err
 	}
@@ -330,10 +389,14 @@ func Save(ctx context.Context, a Article) error {
 	if err != nil {
 		return err
 	}
+	status := a.Status
+	if status == "" {
+		status = "published"
+	}
 	_, err = store.db.ExecContext(ctx, `INSERT INTO articles
 		(slug, title, subtitle, date, tags, excerpt, image, image_caption,
-		 initial_love, star, featured, body)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		 initial_love, star, featured, body, status)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(slug) DO UPDATE SET
 			title = excluded.title,
 			subtitle = excluded.subtitle,
@@ -345,9 +408,10 @@ func Save(ctx context.Context, a Article) error {
 			initial_love = excluded.initial_love,
 			star = excluded.star,
 			featured = excluded.featured,
-			body = excluded.body`,
+			body = excluded.body,
+			status = excluded.status`,
 		a.Slug, a.Title, a.Subtitle, a.Date, string(tags), a.Excerpt, a.Image,
-		a.ImageCaption, a.InitialLove, boolInt(a.Star), boolInt(a.Featured), a.Body)
+		a.ImageCaption, a.InitialLove, boolInt(a.Star), boolInt(a.Featured), a.Body, status)
 	if err != nil {
 		return err
 	}
@@ -362,6 +426,17 @@ func Delete(ctx context.Context, slug string) error {
 		return err
 	}
 	Invalidate(slug)
+	return nil
+}
+
+// ChangeSlug renames an article's primary key. Only call this for drafts whose
+// slug can still change. SQLite allows updating the PRIMARY KEY directly.
+func ChangeSlug(ctx context.Context, oldSlug, newSlug string) error {
+	if _, err := store.db.ExecContext(ctx,
+		`UPDATE articles SET slug = ? WHERE slug = ?`, newSlug, oldSlug); err != nil {
+		return err
+	}
+	Invalidate(oldSlug)
 	return nil
 }
 

@@ -43,8 +43,19 @@
     {{range .Article.Tags}}
     <a href="/tags/{{.}}"><span class="pill">{{.}}</span></a>
     {{end}}
+    <p class="mt-2">
+        <button class="px-2 py-0.5 rounded-full bg-[var(--high-background)] font-mono text-[11px] font-light cursor-pointer transition-opacity hover:opacity-60" onclick="copyToClipboard(document.querySelector('[data-article-body]').textContent, this)">
+            <span data-copy-idle class="inline-flex items-center gap-1 whitespace-nowrap"><i data-lucide="clipboard" class="size-3"></i> copy article</span>
+            <span data-copy-loading hidden class="inline-flex items-center gap-1 whitespace-nowrap"><i data-lucide="loader-2" class="size-3 animate-spin"></i> copying…</span>
+            <span data-copy-success hidden class="inline-flex items-center gap-1 whitespace-nowrap"><i data-lucide="check" class="size-3"></i> copied!</span>
+        </button>
+    </p>
     <p class="mt-1">
         <a href="/">&larr; Back to archive</a>
     </p>
 </div>
+{{end}}
+{{define "page_scripts"}}
+<script src="/vendor/highlight/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
 {{end}}

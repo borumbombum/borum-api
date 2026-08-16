@@ -13,16 +13,16 @@
     {{if .Error}}
     <p class="mb-4 border border-hairline-strong px-3 py-2 font-mono text-[12px] text-red-600">{{.Error}}</p>
     {{end}}
-    <form method="post" action="{{if .IsNew}}/god/articles{{else}}/god/articles/{{.Article.Slug}}/edit{{end}}" class="flex max-w-xl flex-col gap-4">
+    <form method="post" action="{{if .IsNew}}/god/articles{{else}}/god/articles/{{.Article.Slug}}/edit{{end}}" data-autosave {{if not .IsNew}}data-slug="{{.Article.Slug}}"{{end}} class="flex max-w-xl flex-col gap-4">
         <input type="hidden" name="_csrf" value="{{.CSRF}}" />
         <label class="flex flex-col gap-1 font-mono text-[13px] text-ink-soft">
             title *
             <input name="title" type="text" required value="{{.Article.Title}}" class="w-full border-0 border-b border-hairline bg-transparent px-0 py-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none" />
         </label>
-        {{if .IsNew}}
+        {{if or .IsNew (eq .Article.Status "draft")}}
         <label class="flex flex-col gap-1 font-mono text-[13px] text-ink-soft">
             slug *
-            <input name="slug" type="text" required value="{{.Article.Slug}}" pattern="[a-z0-9-]+" class="w-full border-0 border-b border-hairline bg-transparent px-0 py-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none" />
+            <input id="slug-input" name="slug" type="text" required value="{{.Article.Slug}}" pattern="[a-z0-9\-]+" class="w-full border-0 border-b border-hairline bg-transparent px-0 py-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none" />
         </label>
         {{else}}
         <p class="font-mono text-[13px] text-ink-soft">slug — {{.Article.Slug}} (immutable)</p>
@@ -68,11 +68,17 @@
             <textarea name="body" id="body-editor" rows="20" class="hidden w-full border border-hairline bg-transparent p-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none">{{.Article.Body}}</textarea>
         </div>
         <p class="font-mono text-[11px] text-ink-soft">html is normalized on save; use the html toggle for tables or custom markup</p>
-        <button type="submit" class="btn btn-primary btn-sm self-start">save</button>
+        <div class="flex flex-nowrap items-center gap-3">
+            <button type="submit" class="btn btn-primary btn-sm">save</button>
+            <button type="submit" data-action="draft" class="btn btn-sm border border-hairline bg-transparent">save as draft</button>
+            {{if not .IsNew}}<button type="button" data-preview="/god/articles/{{.Article.Slug}}/preview" class="btn btn-sm border border-hairline bg-transparent shrink-0"><span data-preview-idle class="inline-flex items-center gap-1 whitespace-nowrap">preview</span><span data-preview-loading hidden class="inline-flex items-center gap-1 whitespace-nowrap"><i data-lucide="loader-2" class="size-4 animate-spin"></i> opening…</span></button>{{end}}
+            <span id="autosave-status" class="flex items-center gap-1"></span>
+        </div>
     </form>
 </main>
 {{end}}
 {{define "page_scripts"}}
 <script src="/vendor/tiptap/tiptap.bundle.js"></script>
 <script src="/god-editor.js"></script>
+<script src="/god-autosave.js"></script>
 {{end}}
