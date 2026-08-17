@@ -1,0 +1,76 @@
+{{define "title"}}god · dashboard{{end}}
+{{define "content"}}
+<header class="mb-2 flex items-center justify-between border-b border-hairline px-6 py-4">
+    <div class="flex items-center gap-3">
+        <button data-drawer-toggle type="button" class="cursor-pointer text-ink" aria-label="Toggle menu">
+            <i data-lucide="menu" width="20" height="20"></i>
+        </button>
+        <h1 class="font-mono text-[13px] uppercase tracking-[0.12em]">dashboard</h1>
+    </div>
+</header>
+<main class="!p-5 pt-12">
+    <div class="mb-8">
+        <h2 class="mb-4 font-mono text-[13px] font-semibold">Overview</h2>
+        <div class="grid grid-cols-2 gap-6 md:grid-cols-4">
+            <div class="rounded border border-hairline !p-6">
+                <label class="mb-2 block font-mono text-[11px] text-faint">Articles</label>
+                <a href="/god/articles" class="font-mono text-[20px] font-bold hover:opacity-60">{{.ArticleCount}}</a>
+            </div>
+            <div class="rounded border border-hairline !p-6">
+                <label class="mb-2 block font-mono text-[11px] text-faint">Experiments</label>
+                <a href="/god/experiments" class="font-mono text-[20px] font-bold hover:opacity-60">{{.ExperimentCount}}</a>
+            </div>
+            <div class="rounded border border-hairline !p-6">
+                <label class="mb-2 block font-mono text-[11px] text-faint">Contacts</label>
+                <a href="/god/carddav/contacts" class="font-mono text-[20px] font-bold hover:opacity-60">{{.ContactCount}}</a>
+            </div>
+            <div class="rounded border border-hairline !p-6">
+                <label class="mb-2 block font-mono text-[11px] text-faint">Version</label>
+                <p class="font-mono text-[20px] font-bold">{{.Version}}</p>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <h2 class="mb-4 font-mono text-[13px] font-semibold">Navigate</h2>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <a href="/god/articles" class="group flex items-center gap-4 rounded border border-hairline p-4 transition-colors hover:border-ink hover:bg-soft">
+                <div class="flex h-10 w-10 items-center justify-center rounded bg-soft text-ink-soft group-hover:bg-ink group-hover:text-paper">
+                    <i data-lucide="file-text" width="20" height="20"></i>
+                </div>
+                <div>
+                    <p class="font-mono text-[13px] font-semibold">Articles</p>
+                    <p class="font-mono text-[11px] text-faint">Create and manage blog posts</p>
+                </div>
+            </a>
+            <a href="/god/experiments" class="group flex items-center gap-4 rounded border border-hairline p-4 transition-colors hover:border-ink hover:bg-soft">
+                <div class="flex h-10 w-10 items-center justify-center rounded bg-soft text-ink-soft group-hover:bg-ink group-hover:text-paper">
+                    <i data-lucide="flask-conical" width="20" height="20"></i>
+                </div>
+                <div>
+                    <p class="font-mono text-[13px] font-semibold">Experiments</p>
+                    <p class="font-mono text-[11px] text-faint">Configure interactive tools</p>
+                </div>
+            </a>
+            <a href="/god/carddav" class="group flex items-center gap-4 rounded border border-hairline p-4 transition-colors hover:border-ink hover:bg-soft">
+                <div class="flex h-10 w-10 items-center justify-center rounded bg-soft text-ink-soft group-hover:bg-ink group-hover:text-paper">
+                    <i data-lucide="contact" width="20" height="20"></i>
+                </div>
+                <div>
+                    <p class="font-mono text-[13px] font-semibold">Contacts</p>
+                    <p class="font-mono text-[11px] text-faint">CardDAV sovereign backup</p>
+                </div>
+            </a>
+            <a href="/" class="group flex items-center gap-4 rounded border border-hairline p-4 transition-colors hover:border-ink hover:bg-soft">
+                <div class="flex h-10 w-10 items-center justify-center rounded bg-soft text-ink-soft group-hover:bg-ink group-hover:text-paper">
+                    <i data-lucide="globe" width="20" height="20"></i>
+                </div>
+                <div>
+                    <p class="font-mono text-[13px] font-semibold">View Site</p>
+                    <p class="font-mono text-[11px] text-faint">Open public website</p>
+                </div>
+            </a>
+        </div>
+    </div>
+</main>
+{{end}}

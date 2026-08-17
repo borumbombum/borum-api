@@ -1,0 +1,214 @@
+{{define "title"}}god · carddav{{end}}
+{{define "content"}}
+<header class="mb-2 flex items-center justify-between border-b border-hairline px-6 py-4">
+    <div class="flex items-center gap-3">
+        <button data-drawer-toggle type="button" class="cursor-pointer text-ink" aria-label="Toggle menu">
+            <i data-lucide="menu" width="20" height="20"></i>
+        </button>
+        <h1 class="font-mono text-[13px] uppercase tracking-[0.12em]">carddav</h1>
+    </div>
+    <a href="/god/articles" class="font-mono text-[12px] hover:opacity-60">← articles</a>
+</header>
+<main class="!p-5 pt-12">
+    <div class="mb-6">
+        <h2 class="mb-2 font-mono text-[13px] font-semibold">Sovereign Contact Backup</h2>
+        <p class="mb-4 max-w-xl font-mono text-[12px] text-faint">Sync contacts between your phone and server using CardDAV. Configure your iOS/Android client with the URL below.</p>
+    </div>
+
+    <div class="mb-8 rounded border border-hairline !p-6">
+        <h3 class="mb-3 font-mono text-[12px] uppercase tracking-wider text-faint">Client Configuration</h3>
+        <div class="!mb-1">
+            <label class="mb-1 block font-mono text-[11px] text-faint">Server URL</label>
+            <code class="block rounded bg-soft px-3 py-2 font-mono text-[12px]">https://{{.Host}}/carddav/</code>
+        </div>
+        <div class="!mb-1">
+            <label class="mb-1 block font-mono text-[11px] text-faint">Username</label>
+            <code class="block rounded bg-soft px-3 py-2 font-mono text-[12px]">admin</code>
+        </div>
+        <div>
+            <label class="mb-1 block font-mono text-[11px] text-faint">Password</label>
+            <code class="block rounded bg-soft px-3 py-2 font-mono text-[12px]">Your CardDAV token (see .env)</code>
+        </div>
+    </div>
+
+    <div class="mb-8 rounded border border-hairline !p-6">
+        <h3 class="mb-3 font-mono text-[12px] uppercase tracking-wider text-faint">Statistics</h3>
+        <div class="grid grid-cols-2 !gap-4">
+            <div>
+                <label class="mb-1 block font-mono text-[11px] text-faint">Address Book</label>
+                <p class="font-mono text-[13px]">{{.AddressBookName}}</p>
+            </div>
+            <div>
+                <label class="mb-1 block font-mono text-[11px] text-faint">Contacts</label>
+                <a href="/god/carddav/contacts" id="contact-count" class="font-mono text-[13px] hover:opacity-60">{{.ContactCount}}</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-8 flex gap-6">
+        <div class="flex-1 rounded border border-hairline !p-6">
+            <h3 class="mb-3 font-mono text-[12px] uppercase tracking-wider text-faint">Import</h3>
+            <div id="upload-form">
+                <input type="hidden" name="_csrf" value="{{.CSRF}}" />
+                <input id="vcf-file" type="file" name="vcf" accept=".vcf" class="!mb-1 font-mono text-[12px]" />
+                <div id="progress-wrap" class="!mb-1 hidden">
+                    <div id="upload-progress" class="mb-1 flex items-center justify-between font-mono text-[11px] text-faint">
+                        <span id="progress-label">Uploading...</span>
+                        <span id="progress-pct">0%</span>
+                    </div>
+                    <div class="h-1.5 w-full rounded-full bg-soft">
+                        <div id="progress-bar" class="h-1.5 w-0 rounded-full bg-ink transition-all"></div>
+                    </div>
+                </div>
+                <div id="importing-wrap" class="!mb-1 hidden">
+                    <span class="font-mono text-[12px] text-faint">Importing contacts<span class="dots"></span></span>
+                </div>
+                <div id="upload-msg" class="!mb-1 hidden font-mono text-[12px]"></div>
+                <button id="upload-btn" type="button" class="cursor-pointer rounded bg-ink px-3 py-1 font-mono text-[12px] text-paper hover:opacity-80">Upload VCF</button>
+            </div>
+        </div>
+        <div class="rounded border border-hairline !p-6">
+            <h3 class="mb-3 font-mono text-[12px] uppercase tracking-wider text-faint">Export</h3>
+            <a href="/god/carddav/download" download class="inline-block rounded bg-ink px-3 py-1 font-mono text-[12px] text-paper hover:opacity-80">Download VCF</a>
+        </div>
+        <div class="rounded border border-red-500/40 !p-6">
+            <h3 class="mb-3 font-mono text-[12px] uppercase tracking-wider text-faint text-red-600">Danger Zone</h3>
+            <button id="purge-btn" type="button" class="cursor-pointer rounded border border-red-500/40 px-3 py-1 font-mono text-[12px] text-red-600 hover:bg-red-500/10">Purge All</button>
+        </div>
+    </div>
+
+    <div class="rounded border border-hairline !p-6">
+        <h3 class="mb-3 font-mono text-[12px] uppercase tracking-wider text-faint">How to Connect</h3>
+        <ol class="list-inside list-decimal space-y-2 font-mono text-[12px] text-ink-soft">
+            <li>Open your phone's Contacts app</li>
+            <li>Go to Settings → Accounts → Add Account → CardDAV</li>
+            <li>Enter the server URL, username, and password above</li>
+            <li>Wait for initial sync (may take a few minutes)</li>
+            <li>Your contacts are now backed up to your server!</li>
+        </ol>
+    </div>
+</main>
+<style>
+@keyframes dots {
+    0%, 20% { content: '.'; }
+    40% { content: '..'; }
+    60%, 100% { content: '...'; }
+}
+.dots::after { content: '.'; animation: dots 1.5s steps(1, end) infinite; }
+</style>
+<script>
+(function() {
+    var csrf = '{{.CSRF}}';
+    var busy = false;
+    var contactCount = document.getElementById('contact-count');
+    var fileInput = document.getElementById('vcf-file');
+    var btn = document.getElementById('upload-btn');
+    var progressWrap = document.getElementById('progress-wrap');
+    var progressBar = document.getElementById('progress-bar');
+    var progressPct = document.getElementById('progress-pct');
+    var progressLabel = document.getElementById('progress-label');
+    var importingWrap = document.getElementById('importing-wrap');
+    var uploadMsg = document.getElementById('upload-msg');
+    var purgeBtn = document.getElementById('purge-btn');
+
+    function showMsg(el, text, ok) {
+        el.textContent = text;
+        el.className = 'mb-3 font-mono text-[12px] ' + (ok ? 'text-green-600' : 'text-red-600');
+        el.classList.remove('hidden');
+    }
+
+    function refreshCount() {
+        fetch('/god/carddav/stats').then(function(r) { return r.json(); }).then(function(d) {
+            contactCount.textContent = d.contacts;
+        });
+    }
+
+    function resetUpload() {
+        progressWrap.classList.add('hidden');
+        importingWrap.classList.add('hidden');
+        progressBar.classList.remove('animate-pulse');
+        progressBar.style.width = '0%';
+        fileInput.value = '';
+        btn.disabled = false;
+        btn.textContent = 'Upload VCF';
+        busy = false;
+    }
+
+    btn.addEventListener('click', function() {
+        if (busy) return;
+        if (!fileInput.files.length) return;
+        busy = true;
+
+        var xhr = new XMLHttpRequest();
+        var fd = new FormData();
+        fd.append('vcf', fileInput.files[0]);
+        fd.append('_csrf', csrf);
+
+        xhr.upload.addEventListener('progress', function(ev) {
+            if (ev.lengthComputable) {
+                var pct = Math.round((ev.loaded / ev.total) * 100);
+                progressBar.style.width = pct + '%';
+                progressPct.textContent = pct + '%';
+                if (pct >= 100) {
+                    progressWrap.classList.add('hidden');
+                    importingWrap.classList.remove('hidden');
+                    btn.textContent = 'Importing...';
+                }
+            }
+        });
+
+        xhr.addEventListener('load', function() {
+            importingWrap.classList.add('hidden');
+            if (xhr.status === 200) {
+                var d = JSON.parse(xhr.responseText);
+                showMsg(uploadMsg, 'Imported ' + d.imported + ' contacts', true);
+                refreshCount();
+            } else {
+                var err = JSON.parse(xhr.responseText);
+                showMsg(uploadMsg, err.error || 'Upload failed', false);
+            }
+            resetUpload();
+        });
+
+        xhr.addEventListener('error', function() {
+            importingWrap.classList.add('hidden');
+            showMsg(uploadMsg, 'Network error', false);
+            resetUpload();
+        });
+
+        btn.disabled = true;
+        btn.textContent = 'Uploading...';
+        uploadMsg.classList.add('hidden');
+        importingWrap.classList.add('hidden');
+        progressWrap.classList.remove('hidden');
+        progressBar.style.width = '0%';
+        progressPct.textContent = '0%';
+        progressLabel.textContent = 'Uploading...';
+        xhr.open('POST', '/god/carddav/upload');
+        xhr.send(fd);
+    });
+
+    purgeBtn.addEventListener('click', function() {
+        var count = contactCount.textContent;
+        if (!confirm('Delete all ' + count + ' contacts? This cannot be undone.')) return;
+
+        purgeBtn.disabled = true;
+        purgeBtn.textContent = 'Purging...';
+
+        fetch('/god/carddav/purge', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            showMsg(uploadMsg, 'Purged ' + d.purged + ' contacts', true);
+            refreshCount();
+            purgeBtn.disabled = false;
+            purgeBtn.textContent = 'Purge All';
+        }).catch(function() {
+            showMsg(uploadMsg, 'Purge failed', false);
+            purgeBtn.disabled = false;
+            purgeBtn.textContent = 'Purge All';
+        });
+    });
+})();
+</script>
+{{end}}

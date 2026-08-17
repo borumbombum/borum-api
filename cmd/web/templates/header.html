@@ -1,5 +1,9 @@
 {{define "header"}}<header class="header">
     <div class="nav-buttons">
+        <!-- Biking -->
+        <button type="button" class="battery-info inline-flex items-center gap-1 font-mono text-[13px] text-ink-soft" title="Biking"><i data-lucide="bike" width="20" height="20"></i> 6164 km</button>
+
+        <!-- Battery -->
         {{if .Battery.Available}}
             <button type="button" class="battery-info inline-flex items-center gap-1 font-mono text-[13px] text-ink-soft" title="Battery details" data-available="true" data-percentage="{{.Battery.Percentage}}" data-charging="{{.Battery.Charging}}" data-status="{{.Battery.Status.Status}}" data-health="{{.Battery.Health}}" data-plugged="{{.Battery.Plugged}}" data-temperature="{{.Battery.Temperature}}" data-current="{{.Battery.Current}}" data-device="{{deviceModel}}"><i data-lucide="{{batteryIcon .Battery.Percentage .Battery.Charging}}" width="22" height="22"></i> {{.Battery.Percentage}}%</button>
         {{else}}

@@ -195,3 +195,9 @@ func (a *app) articleUpdateDraftHandler(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 	fmt.Fprintf(w, `{"ok":true,"slug":%q}`, slug)
 }
+
+// wellKnownCardDAVHandler redirects /.well-known/carddav to /carddav/ for
+// client auto-discovery (iOS, Android, macOS Contacts).
+func (a *app) wellKnownCardDAVHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/carddav/", http.StatusMovedPermanently)
+}

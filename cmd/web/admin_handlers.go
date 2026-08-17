@@ -62,9 +62,44 @@ func (a *app) renderGodPage(w http.ResponseWriter, status int, name string, data
 	}
 }
 
-// godHandler lands on the article list.
+// godHandler lands on the dashboard with stats and navigation.
 func (a *app) godHandler(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/god/articles", http.StatusFound)
+	data := a.newGodData(r, false)
+	
+	// Get article count
+	var articleCount int
+	if err := a.db.QueryRowContext(r.Context(), "SELECT COUNT(*) FROM articles").Scan(&articleCount); err != nil {
+		a.errorLogger.Printf("dashboard article count: %v", err)
+	}
+	
+	// Get experiment count
+	var experimentCount int
+	if err := a.db.QueryRowContext(r.Context(), "SELECT COUNT(*) FROM experiments").Scan(&experimentCount); err != nil {
+		a.errorLogger.Printf("dashboard experiment count: %v", err)
+	}
+	
+	// Get contact count
+	var contactCount int
+	if err := a.db.QueryRowContext(r.Context(), 
+		`SELECT COUNT(*) FROM contacts c
+		 JOIN address_books ab ON c.address_book_id = ab.id
+		 WHERE ab.user_id = 'default' AND c.deleted_at IS NULL`).Scan(&contactCount); err != nil {
+		a.errorLogger.Printf("dashboard contact count: %v", err)
+	}
+	
+	dashboardData := struct {
+		godData
+		ArticleCount   int
+		ExperimentCount int
+		ContactCount   int
+	}{
+		godData:         data,
+		ArticleCount:   articleCount,
+		ExperimentCount: experimentCount,
+		ContactCount:   contactCount,
+	}
+	
+	renderGodPage(w, "god_dashboard", dashboardData)
 }
 
 // godExperimentsHandler renders the admin experiment list: every hardcoded

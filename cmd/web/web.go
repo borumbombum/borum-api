@@ -194,9 +194,12 @@ func loadTemplates() error {
 	// The /god pages share their own layout: god_base.html + the drawer
 	// partial, without the public header/footer.
 	godPages := map[string]string{
-		"god_list":        "god_articles.html",
-		"god_form":        "god_article_form.html",
-		"god_experiments": "god_experiments.html",
+		"god_list":             "god_articles.html",
+		"god_form":             "god_article_form.html",
+		"god_experiments":      "god_experiments.html",
+		"god_carddav":          "god_carddav.html",
+		"god_carddav_contacts": "god_carddav_contacts.html",
+		"god_dashboard":        "god_dashboard.html",
 	}
 	godCommon := []string{"god_base.html", "god_drawer.html"}
 	for name, page := range godPages {

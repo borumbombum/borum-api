@@ -1,4 +1,4 @@
-Status: [TODO]
+Status: [IN_PROGRESS]
 
 # CardDAV Contact Sync (Sovereign Backup)
 

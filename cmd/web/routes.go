@@ -7,7 +7,9 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/borumbombum/borum-api/internal/carddav"
 	"github.com/borumbombum/borum-api/internal/i18n"
+	carddavlib "github.com/emersion/go-webdav/carddav"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -50,12 +52,23 @@ func (a *app) apiRoutes() []apiRoute {
 		{http.MethodPost, "/god/articles/{slug}/delete", a.requirePage(a.godArticleDeleteHandler)},
 		{http.MethodPost, "/god/articles/{slug}/preview", a.requirePage(a.godPreviewTokenHandler)},
 		{http.MethodGet, "/god/articles/preview/{token}", a.requirePage(a.godPreviewHandler)},
+		{http.MethodGet, "/god/carddav", a.requirePage(a.godCardDAVHandler)},
+		{http.MethodPost, "/god/carddav/upload", a.requirePage(a.godCardDAVUploadHandler)},
+		{http.MethodGet, "/god/carddav/download", a.requirePage(a.godCardDAVDownloadHandler)},
+		{http.MethodPost, "/god/carddav/purge", a.requirePage(a.godCardDAVPurgeHandler)},
+		{http.MethodGet, "/god/carddav/stats", a.requirePage(a.godCardDAVStatsHandler)},
+		{http.MethodGet, "/god/carddav/contacts", a.requirePage(a.godCardDAVContactsHandler)},
+		{http.MethodPost, "/god/carddav/contacts/{id}/delete", a.requirePage(a.godCardDAVContactDeleteHandler)},
+		{http.MethodGet, "/god/carddav/contacts/{id}/download", a.requirePage(a.godCardDAVContactDownloadHandler)},
 
 		// Data endpoints (no language prefix)
 		{http.MethodGet, "/data/articles.json", a.articlesJSONHandler},
 
 		// Experiment API routes (no language prefix)
 		{http.MethodPost, "/experiments/img2webp/convert", a.img2webpConvertHandler},
+
+		// CardDAV routes (no language prefix)
+		{http.MethodGet, "/.well-known/carddav", a.wellKnownCardDAVHandler},
 	}
 
 	// Add language-specific routes for each supported language
@@ -155,6 +168,20 @@ func router(a *app, routes []apiRoute) http.Handler {
 	}))
 
 	r.NotFound(a.notFoundHandler)
+
+	// Mount CardDAV handler with authentication middleware
+	carddavBackend := carddav.NewBackend(a.db)
+	carddavHandler := &carddavlib.Handler{
+		Backend: carddavBackend,
+		Prefix:  "/carddav",
+	}
+	r.Route("/carddav", func(r chi.Router) {
+		r.Use(carddav.SecurityHeaders)
+		r.Use(carddav.RequireHTTPS)
+		r.Use(carddav.BasicAuth)
+		r.Handle("/*", carddavHandler)
+		r.Handle("/", carddavHandler)
+	})
 
 	return r
 }

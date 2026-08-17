@@ -1,0 +1,80 @@
+{{define "title"}}god · carddav · contacts{{end}}
+{{define "content"}}
+<header class="mb-2 flex items-center justify-between border-b border-hairline px-6 py-4">
+    <div class="flex items-center gap-3">
+        <button data-drawer-toggle type="button" class="cursor-pointer text-ink" aria-label="Toggle menu">
+            <i data-lucide="menu" width="20" height="20"></i>
+        </button>
+        <h1 class="font-mono text-[13px] uppercase tracking-[0.12em]">carddav · contacts</h1>
+    </div>
+    <a href="/god/carddav" class="font-mono text-[12px] hover:opacity-60">← carddav</a>
+</header>
+<main class="!p-5 pt-12">
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <h2 class="font-mono text-[13px] font-semibold">Contacts</h2>
+            <p id="contact-total" class="font-mono text-[12px] text-faint">{{.Total}} contacts stored</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="/god/carddav/download" download class="rounded bg-ink px-3 py-1 font-mono text-[12px] text-paper hover:opacity-80">Download All</a>
+        </div>
+    </div>
+
+    {{if .Contacts}}
+    <div class="rounded border border-hairline">
+        <table class="w-full font-mono text-[12px]">
+            <thead>
+                <tr class="border-b border-hairline text-left text-faint">
+                    <th class="!px-6 !py-3">#</th>
+                    <th class="!px-6 !py-3">Name</th>
+                    <th class="!px-6 !py-3">Email</th>
+                    <th class="!px-6 !py-3">Phone</th>
+                    <th class="!px-6 !py-3 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Contacts}}
+                <tr data-id="{{.ID}}" class="border-b border-hairline last:border-b-0">
+                    <td class="!px-6 !py-3 text-faint">{{.Index}}</td>
+                    <td class="!px-6 !py-3">{{.Name}}</td>
+                    <td class="!px-6 !py-3 text-faint">{{.Email}}</td>
+                    <td class="!px-6 !py-3 text-faint">{{.Phone}}</td>
+                    <td class="!px-6 !py-3 text-right">
+                        <div class="flex items-center justify-end gap-2">
+                            <a href="/god/carddav/contacts/{{.ID}}/download" download class="font-mono text-[11px] text-faint hover:text-ink">Download</a>
+                            <button type="button" data-delete="{{.ID}}" class="font-mono text-[11px] text-red-600 hover:text-red-700">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+    <script>
+    (function() {
+        var totalEl = document.getElementById('contact-total');
+        document.querySelectorAll('[data-delete]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var id = btn.getAttribute('data-delete');
+                if (!confirm('Delete this contact?')) return;
+                btn.disabled = true;
+                fetch('/god/carddav/contacts/' + id + '/delete', { method: 'POST' })
+                    .then(function() {
+                        var tr = btn.closest('tr');
+                        if (tr) tr.remove();
+                        if (totalEl) {
+                            var rows = document.querySelectorAll('tbody tr');
+                            totalEl.textContent = rows.length + ' contacts stored';
+                        }
+                    });
+            });
+        });
+    })();
+    </script>
+    {{else}}
+    <div class="rounded border border-hairline !p-6 text-center">
+        <p class="font-mono text-[12px] text-faint">No contacts stored yet.</p>
+    </div>
+    {{end}}
+</main>
+{{end}}

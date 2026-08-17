@@ -16,6 +16,11 @@ This rule overrides everything else. Breaking it loses trust.
 - Never proceed to next task until code compiles cleanly
 - If compilation fails, fix it immediately before continuing
 
+**ALWAYS VERIFY APP STARTS:**
+- Run `go run ./cmd/web/` after migration changes
+- Verify the server starts without errors
+- If migration fails, fix it immediately before continuing
+
 ---
 
 # Security
@@ -62,6 +67,7 @@ This rule overrides everything else. Breaking it loses trust.
   - `640px` — a smaller tier, used by the `.sm\:inline` utility.
 - If a media query only affects one component, co-locate it in that component's file (e.g. `.article-table` lives in `prose.css`). Put global responsive rules in `breakpoints.css`.
 - Remember the concat order — theme, base, components, prose, animations, breakpoints, utilities — when a rule must win. Equal-specificity rules later in the list win.
+- Check `docs/ui-ux.md` for UI patterns (cards, spacing, layout).
 
 # Editor
 
@@ -94,7 +100,16 @@ This rule overrides everything else. Breaking it loses trust.
 
 - 001 [DONE] Top loading indicator between page navigations
 - 002 [DONE] Perfect the language (i18n) implementation
-- 003 [TODO] CardDAV contact sync (sovereign backup)
+- 003 [IN_PROGRESS] CardDAV contact sync (sovereign backup)
+- 004 [DONE] VCF contact backup
+
+# Bugs
+
+- Known bugs live in `bugs/` — one file per bug, named `NNN-short-slug.md`.
+- Status markers: `[OPEN]` (active, not fixed), `[FIXED]` (resolved and verified).
+- Keep this list in sync with the files.
+
+- 001 [OPEN] CardDAV upload auto-retry loop
 
 # Documentation
 

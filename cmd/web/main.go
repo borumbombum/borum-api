@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"sync"
 	"syscall"
 	"time"
 
@@ -36,6 +37,8 @@ type app struct {
 	version        string
 	errorLogger    *log.Logger
 	convertLimiter *ratelimit.Limiter
+	carddavMu      sync.Mutex
+	carddavLastOK  time.Time
 }
 
 // sessionTTL reads SESSION_TTL_HOURS from the environment, defaulting to 30

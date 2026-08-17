@@ -82,6 +82,11 @@ func Backup(db *sql.DB) error {
 		log.Printf("backup: warning: failed to delete old backups: %v", err)
 	}
 
+	// VCF contact backup
+	if err := BackupVCF(db); err != nil {
+		log.Printf("backup: warning: vcf backup failed: %v", err)
+	}
+
 	return nil
 }
 
