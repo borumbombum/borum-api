@@ -81,22 +81,21 @@
         <h2 class="font-mono text-[13px] uppercase tracking-[0.12em] mb-4">Portuguese Translation</h2>
         <form method="post" action="/god/articles/{{.Article.Slug}}/edit" class="flex flex-col gap-4">
             <input type="hidden" name="_csrf" value="{{.CSRF}}" />
-            <input type="hidden" name="lang" value="pt" />
             <label class="flex flex-col gap-1 font-mono text-[13px] text-ink-soft">
                 title (pt)
-                <input name="title_pt" type="text" value="{{.Article.TitlePT}}" class="w-full border-0 border-b border-hairline bg-transparent px-0 py-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none" />
+                <input name="title_pt" type="text" value="{{if .Translation}}{{.Translation.Title}}{{end}}" class="w-full border-0 border-b border-hairline bg-transparent px-0 py-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none" />
             </label>
             <label class="flex flex-col gap-1 font-mono text-[13px] text-ink-soft">
                 subtitle (pt)
-                <input name="subtitle_pt" type="text" value="{{.Article.SubtitlePT}}" class="w-full border-0 border-b border-hairline bg-transparent px-0 py-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none" />
+                <input name="subtitle_pt" type="text" value="{{if .Translation}}{{.Translation.Subtitle}}{{end}}" class="w-full border-0 border-b border-hairline bg-transparent px-0 py-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none" />
             </label>
             <label class="flex flex-col gap-1 font-mono text-[13px] text-ink-soft">
                 excerpt (pt)
-                <textarea name="excerpt_pt" rows="2" class="w-full border border-hairline bg-transparent p-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none">{{.Article.ExcerptPT}}</textarea>
+                <textarea name="excerpt_pt" rows="2" class="w-full border border-hairline bg-transparent p-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none">{{if .Translation}}{{.Translation.Excerpt}}{{end}}</textarea>
             </label>
             <label class="flex flex-col gap-1 font-mono text-[13px] text-ink-soft">
                 image caption (pt)
-                <input name="image_caption_pt" type="text" value="{{.Article.ImageCaptionPT}}" class="w-full border-0 border-b border-hairline bg-transparent px-0 py-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none" />
+                <input name="image_caption_pt" type="text" value="{{if .Translation}}{{.Translation.ImageCaption}}{{end}}" class="w-full border-0 border-b border-hairline bg-transparent px-0 py-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none" />
             </label>
             <label class="flex flex-col gap-1 font-mono text-[13px] text-ink-soft" for="body-pt-editor">
                 body (pt, html)
@@ -104,7 +103,7 @@
             <div class="editor-shell">
                 <div class="editor-toolbar sticky top-0 z-10 bg-[color:var(--background)]"></div>
                 <div data-editor="body-pt-editor" class="article prose-diary"></div>
-                <textarea name="body_pt" id="body-pt-editor" rows="20" class="hidden w-full border border-hairline bg-transparent p-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none">{{.Article.BodyPT}}</textarea>
+                <textarea name="body_pt" id="body-pt-editor" rows="20" class="hidden w-full border border-hairline bg-transparent p-2 font-mono text-[13px] text-ink focus:border-ink focus:outline-none">{{if .Translation}}{{.Translation.Body}}{{end}}</textarea>
             </div>
             <div class="flex flex-nowrap items-center gap-3">
                 <button type="submit" class="btn btn-primary btn-sm">save translation</button>

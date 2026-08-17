@@ -3,6 +3,19 @@ name: git-commit-workflow
 description: Rules for committing, bumping versions, and pushing to git. Use whenever asked to commit, save, bump version, push, push to remote, or release — or before you run any git write command yourself.
 ---
 
+# ⚠️ CRITICAL: NEVER COMMIT WITHOUT EXPLICIT ORDER ⚠️
+
+**STOP. READ THIS FIRST.**
+
+- Do NOT run `git commit` unless the user says "commit"
+- Do NOT run `git push` unless the user says "push"
+- Do NOT run `git add -A` unless the user says "commit"
+- Do NOT bump VERSION unless the user says "bump"
+
+**ASK FIRST. WAIT FOR ORDER.**
+
+---
+
 # Git Commit / Bump / Push
 
 1. `git pull` first, at the start of a session.

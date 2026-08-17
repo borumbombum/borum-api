@@ -64,7 +64,7 @@ func (a *app) experimentHandler(w http.ResponseWriter, r *http.Request) {
 				item.Experiment.Description = trans.Description
 			}
 			if trans.Intro != "" {
-				item.IntroPT = trans.Intro
+				item.Intro = trans.Intro
 			}
 		}
 	}

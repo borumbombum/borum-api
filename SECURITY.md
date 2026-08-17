@@ -1,7 +1,9 @@
 # SECURITY — borum-api audit
 
-Audit date: August 15, 2026. Scope: full `borum-api` codebase (auth, routes,
-handlers, templates, static assets, DB layer, scheduler).
+Audit date: August 15, 2026. Re-verified: August 17, 2026 (draft system and
+Portuguese i18n landed since; Bugs #3 and #4 below updated to match). Scope:
+full `borum-api` codebase (auth, routes, handlers, templates, static assets,
+DB layer, scheduler).
 
 ## What's already solid
 
@@ -34,7 +36,9 @@ Article bodies and experiment intros are rendered raw via
 `{{safe .Article.Body}}` / `{{safe .Experiment.Intro}}`. Admin-only input, so it
 is safe *only* while the session + CSRF hold. Since the CSRF token sits in the
 page, any clickjacking or session leak becomes full stored XSS for every
-visitor. Sanitize on save (e.g. `bluemonday`) or accept the risk knowingly.
+visitor. Portuguese translations (added after this audit) render through the
+same raw `{{safe}}` paths, so they carry the same risk. Sanitize on save (e.g.
+`bluemonday`) or accept the risk knowingly.
 
 **2. CDN scripts without SRI (supply-chain risk)**
 
@@ -63,11 +67,14 @@ gitignore `/hashpass`.**
 2. **DB hit per static asset while logged in**: `Peek` runs router-wide, so
    every `/app.js`, `/styles.css`, image request triggers a remote Turso
    session lookup. Skip session resolution for static paths.
-3. **`last_seen` column is never written** — dead code, and no sliding session
-   renewal.
+3. **`last_seen` written only at session creation** — updated 2026-08-17: the
+   insert now sets `last_seen = datetime('now')`, but nothing refreshes it on
+   activity. Still no sliding session renewal.
 4. **Cache mutexes held during remote DB loads** (`ttlCache.get`,
-   `articleCache.get`) — all article page reads serialize on one mutex against
-   a *remote* DB. Use singleflight/per-key locking.
+   `articleCache.get`) — updated 2026-08-17: articles now use a per-slug TTL
+   cache with LRU eviction (`articleCache`), but one global mutex is still held
+   during the remote `queryArticle` load, so reads still serialize against the
+   *remote* DB. Use singleflight/per-key locking.
 5. **Shutdown order is backwards**: `sqlDB.Close()` runs *before*
    `srv.Shutdown()`, so in-flight requests during shutdown hit a closed DB.
    Shut down the server first.
@@ -83,6 +90,18 @@ gitignore `/hashpass`.**
    README even hints it might be "broke."
 9. Hardcoded "1 min read" on every article; health endpoint does a DB ping per
    request (cache it).
+
+---
+
+## Post-audit changes (August 15–17, 2026)
+
+- Draft system, syntax highlighting, code-block copy buttons, article copy,
+  and editor auto-save. No new security findings beyond what is listed above.
+- Portuguese i18n: language-prefixed routes (`/pt/...`), translation tables,
+  `hreflang` tags, JSON-LD. Translations render through the same raw
+  `{{safe}}` paths as English content — see Medium #1. In-progress parts
+  (`internal/i18n/`, migration `0007_add_i18n.sql`) are uncommitted.
+- `last_seen` and the article cache changed — see Bugs #3 and #4.
 
 ---
 

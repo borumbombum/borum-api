@@ -1,9 +1,9 @@
 {{define "title"}}Diary of a Bootstrapper{{end}}
 {{define "meta"}}<meta name="description" content="Notes from the trenches — building a startup, a life, and a couple of self-hosted APIs on the way." />
-<link rel="canonical" href="https://borum.dev{{if eq .Lang "pt"}}/pt{{end}}" />
-<link rel="alternate" hreflang="en" href="https://borum.dev/" />
-<link rel="alternate" hreflang="pt" href="https://borum.dev/pt" />
-<link rel="alternate" hreflang="x-default" href="https://borum.dev/" />
+<link rel="canonical" href="https://{{.Host}}{{if ne .Lang "en"}}/{{.Lang}}{{end}}" />
+<link rel="alternate" hreflang="en" href="https://{{.Host}}/" />
+<link rel="alternate" hreflang="pt" href="https://{{.Host}}/pt" />
+<link rel="alternate" hreflang="x-default" href="https://{{.Host}}/" />
 {{end}}
 {{define "content"}}
 <div class="bg-grey pb-2">

@@ -30,6 +30,7 @@ type godData struct {
 	Tags        string // comma-separated, for the form input
 	Experiments []experiments.Item
 	Lang        string
+	Translation *content.ArticleTranslation
 }
 
 // newGodData builds the shared admin view model, minting a CSRF token bound to
@@ -111,9 +112,6 @@ func (a *app) godExperimentIntroHandler(w http.ResponseWriter, r *http.Request) 
 		lang = "en"
 	}
 	intro := r.FormValue("intro")
-	if lang == "pt" {
-		intro = r.FormValue("intro_pt")
-	}
 	if err := experiments.UpdateIntro(r.Context(), slug, lang, intro); err != nil {
 		a.errorLogger.Print(err.Error())
 		data.Error = "could not save the experiment intro"
@@ -188,6 +186,8 @@ func (a *app) godArticleCreateHandler(w http.ResponseWriter, r *http.Request) {
 		a.renderGodPage(w, http.StatusInternalServerError, "god_form", data)
 		return
 	}
+	// Save translation if provided
+	parseAndSaveTranslation(r, art.Slug, "pt")
 	http.Redirect(w, r, "/god/articles", http.StatusSeeOther)
 }
 
@@ -212,7 +212,7 @@ func (a *app) godArticleDraftHandler(w http.ResponseWriter, r *http.Request) {
 	if art.Slug == "" {
 		art.Slug = makeSlug(art.Title)
 		// Ensure slug uniqueness.
-		for i := 2; content.GetArticleAny(r.Context(), art.Slug, "en") != nil; i++ {
+		for i := 2; content.GetArticleAny(r.Context(), art.Slug) != nil; i++ {
 			art.Slug = makeSlug(art.Title) + "-" + fmt.Sprintf("%d", i)
 		}
 	}
@@ -228,6 +228,8 @@ func (a *app) godArticleDraftHandler(w http.ResponseWriter, r *http.Request) {
 		a.renderGodPage(w, http.StatusInternalServerError, "god_form", data)
 		return
 	}
+	// Save translation if provided
+	parseAndSaveTranslation(r, art.Slug, "pt")
 	// Redirect to edit form so the user can continue working on the draft.
 	http.Redirect(w, r, "/god/articles/"+art.Slug+"/edit", http.StatusSeeOther)
 }
@@ -235,7 +237,7 @@ func (a *app) godArticleDraftHandler(w http.ResponseWriter, r *http.Request) {
 // godArticleEditHandler renders the edit form, pre-filled from the database.
 func (a *app) godArticleEditHandler(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
-	art := content.GetArticleAny(r.Context(), slug, "en")
+	art := content.GetArticleAny(r.Context(), slug)
 	if art == nil {
 		a.notFoundHandler(w, r)
 		return
@@ -243,6 +245,8 @@ func (a *app) godArticleEditHandler(w http.ResponseWriter, r *http.Request) {
 	data := a.newGodData(r, false)
 	data.Article = art
 	data.Tags = strings.Join(art.Tags, ", ")
+	// Load translation for PT
+	data.Translation = content.GetTranslation(r.Context(), slug, "pt")
 	a.renderGodPage(w, http.StatusOK, "god_form", data)
 }
 
@@ -253,7 +257,8 @@ func (a *app) godArticleUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	data := a.newGodData(r, false)
 	if !a.validCSRF(r) {
 		data.Error = "invalid request token, try again"
-		data.Article = content.GetArticleAny(r.Context(), slug, "en")
+		data.Article = content.GetArticleAny(r.Context(), slug)
+		data.Translation = content.GetTranslation(r.Context(), slug, "pt")
 		a.renderGodPage(w, http.StatusForbidden, "god_form", data)
 		return
 	}
@@ -263,21 +268,23 @@ func (a *app) godArticleUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		art.Slug = slug
 		data.Article = &art
 		data.Tags = strings.Join(art.Tags, ", ")
+		data.Translation = content.GetTranslation(r.Context(), slug, "pt")
 		a.renderGodPage(w, http.StatusUnprocessableEntity, "god_form", data)
 		return
 	}
 	// Preserve the existing love count and check if slug needs changing.
-	existing := content.GetArticleAny(r.Context(), slug, "en")
+	existing := content.GetArticleAny(r.Context(), slug)
 	if existing != nil {
 		art.InitialLove = existing.InitialLove
 		// Allow slug changes for drafts only.
 		if existing.Status == "draft" && art.Slug != "" && art.Slug != slug {
-			if err := content.ChangeSlug(r.Context(), slug, art.Slug, "en"); err != nil {
+			if err := content.ChangeSlug(r.Context(), slug, art.Slug); err != nil {
 				a.errorLogger.Print(err.Error())
 				data.Error = "could not update slug"
 				art.Slug = slug
 				data.Article = &art
 				data.Tags = strings.Join(art.Tags, ", ")
+				data.Translation = content.GetTranslation(r.Context(), slug, "pt")
 				a.renderGodPage(w, http.StatusInternalServerError, "god_form", data)
 				return
 			}
@@ -293,9 +300,12 @@ func (a *app) godArticleUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		data.Error = "could not save the article"
 		data.Article = &art
 		data.Tags = strings.Join(art.Tags, ", ")
+		data.Translation = content.GetTranslation(r.Context(), slug, "pt")
 		a.renderGodPage(w, http.StatusInternalServerError, "god_form", data)
 		return
 	}
+	// Save translation if provided
+	parseAndSaveTranslation(r, slug, "pt")
 	http.Redirect(w, r, "/god/articles/"+slug+"/edit", http.StatusSeeOther)
 }
 
@@ -310,7 +320,7 @@ func (a *app) godArticleDeleteHandler(w http.ResponseWriter, r *http.Request) {
 		a.renderGodPage(w, http.StatusForbidden, "god_list", data)
 		return
 	}
-	if err := content.Delete(r.Context(), slug, "en"); err != nil {
+	if err := content.Delete(r.Context(), slug); err != nil {
 		a.errorLogger.Print(err.Error())
 		data.Error = "could not delete the article"
 		data.Articles = content.List(r.Context())
@@ -342,22 +352,16 @@ func (a *app) sessionToken(r *http.Request) string {
 func parseArticleForm(r *http.Request) content.Article {
 	r.ParseForm()
 	art := content.Article{
-		Slug:           strings.TrimSpace(r.FormValue("slug")),
-		Title:          strings.TrimSpace(r.FormValue("title")),
-		Subtitle:       strings.TrimSpace(r.FormValue("subtitle")),
-		Date:           strings.TrimSpace(r.FormValue("date")),
-		Excerpt:        strings.TrimSpace(r.FormValue("excerpt")),
-		Image:          strings.TrimSpace(r.FormValue("image")),
-		ImageCaption:   strings.TrimSpace(r.FormValue("image_caption")),
-		Star:           r.FormValue("star") == "on",
-		Featured:       r.FormValue("featured") == "on",
-		Body:           r.FormValue("body"),
-		Lang:           strings.TrimSpace(r.FormValue("lang")),
-		TitlePT:        strings.TrimSpace(r.FormValue("title_pt")),
-		SubtitlePT:     strings.TrimSpace(r.FormValue("subtitle_pt")),
-		ExcerptPT:      strings.TrimSpace(r.FormValue("excerpt_pt")),
-		ImageCaptionPT: strings.TrimSpace(r.FormValue("image_caption_pt")),
-		BodyPT:         r.FormValue("body_pt"),
+		Slug:         strings.TrimSpace(r.FormValue("slug")),
+		Title:        strings.TrimSpace(r.FormValue("title")),
+		Subtitle:     strings.TrimSpace(r.FormValue("subtitle")),
+		Date:         strings.TrimSpace(r.FormValue("date")),
+		Excerpt:      strings.TrimSpace(r.FormValue("excerpt")),
+		Image:        strings.TrimSpace(r.FormValue("image")),
+		ImageCaption: strings.TrimSpace(r.FormValue("image_caption")),
+		Star:         r.FormValue("star") == "on",
+		Featured:     r.FormValue("featured") == "on",
+		Body:         r.FormValue("body"),
 	}
 	for _, t := range strings.Split(r.FormValue("tags"), ",") {
 		if t = strings.TrimSpace(t); t != "" {
@@ -365,6 +369,30 @@ func parseArticleForm(r *http.Request) content.Article {
 		}
 	}
 	return art
+}
+
+// parseAndSaveTranslation parses translation fields from the form and saves them.
+func parseAndSaveTranslation(r *http.Request, slug, lang string) {
+	r.ParseForm()
+	title := strings.TrimSpace(r.FormValue("title_" + lang))
+	subtitle := strings.TrimSpace(r.FormValue("subtitle_" + lang))
+	excerpt := strings.TrimSpace(r.FormValue("excerpt_" + lang))
+	imageCaption := strings.TrimSpace(r.FormValue("image_caption_" + lang))
+	body := r.FormValue("body_" + lang)
+
+	// Only save if at least one field is provided
+	if title != "" || subtitle != "" || excerpt != "" || imageCaption != "" || body != "" {
+		t := content.ArticleTranslation{
+			Slug:         slug,
+			Lang:         lang,
+			Title:        title,
+			Subtitle:     subtitle,
+			Excerpt:      excerpt,
+			ImageCaption: imageCaption,
+			Body:         body,
+		}
+		content.SaveTranslation(r.Context(), t)
+	}
 }
 
 // previewToken is a short-lived, session-bound token for draft preview.
@@ -427,7 +455,7 @@ func (a *app) godPreviewHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	art := content.GetArticleAny(r.Context(), pt.Slug, "en")
+	art := content.GetArticleAny(r.Context(), pt.Slug)
 	if art == nil {
 		a.notFoundHandler(w, r)
 		return

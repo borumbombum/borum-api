@@ -6,8 +6,8 @@ package main
 import (
 	"context"
 	"net/http"
-	"strings"
 
+	"github.com/borumbombum/borum-api/internal/i18n"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -25,30 +25,17 @@ type apiRoute struct {
 // endpoint unversioned and versioned routes under /api/v1.
 // Both route registration and the startup banner are generated from it.
 func (a *app) apiRoutes() []apiRoute {
-	return []apiRoute{
-		{http.MethodGet, "/", a.homeHandler},
-		{http.MethodGet, "/blog/{slug}", a.articleHandler},
-		{http.MethodGet, "/tags/{tag}", a.tagHandler},
-		{http.MethodGet, "/experiments/{slug}", a.experimentHandler},
-		{http.MethodPost, "/experiments/img2webp/convert", a.img2webpConvertHandler},
+	routes := []apiRoute{
+		// API routes (no language prefix)
 		{http.MethodGet, "/api/health", a.healthHandler},
-		{http.MethodGet, "/data/articles.json", a.articlesJSONHandler},
-		{http.MethodGet, "/data/articles-pt.json", a.articlesPTJSONHandler},
-
-		// Portuguese routes
-		{http.MethodGet, "/pt", a.homeHandler},
-		{http.MethodGet, "/pt/blog/{slug}", a.articleHandler},
-		{http.MethodGet, "/pt/tags/{tag}", a.tagHandler},
-		{http.MethodGet, "/pt/experiments/{slug}", a.experimentHandler},
-
-		{http.MethodGet, "/login", a.loginPageHandler},
 		{http.MethodPost, "/api/v1/auth/login", a.loginHandler},
 		{http.MethodPost, "/api/v1/auth/logout", a.requireAPI(a.logoutHandler)},
 		{http.MethodGet, "/api/v1/auth/me", a.meHandler},
-
 		{http.MethodPost, "/api/v1/articles/draft", a.requireAPI(a.articleCreateDraftHandler)},
 		{http.MethodPut, "/api/v1/articles/{slug}/draft", a.requireAPI(a.articleUpdateDraftHandler)},
 
+		// Admin routes (no language prefix)
+		{http.MethodGet, "/login", a.loginPageHandler},
 		{http.MethodGet, "/god", a.requirePage(a.godHandler)},
 		{http.MethodGet, "/god/articles", a.requirePage(a.godArticlesHandler)},
 		{http.MethodGet, "/god/experiments", a.requirePage(a.godExperimentsHandler)},
@@ -63,7 +50,38 @@ func (a *app) apiRoutes() []apiRoute {
 		{http.MethodPost, "/god/articles/{slug}/delete", a.requirePage(a.godArticleDeleteHandler)},
 		{http.MethodPost, "/god/articles/{slug}/preview", a.requirePage(a.godPreviewTokenHandler)},
 		{http.MethodGet, "/god/articles/preview/{token}", a.requirePage(a.godPreviewHandler)},
+
+		// Data endpoints (no language prefix)
+		{http.MethodGet, "/data/articles.json", a.articlesJSONHandler},
+
+		// Experiment API routes (no language prefix)
+		{http.MethodPost, "/experiments/img2webp/convert", a.img2webpConvertHandler},
 	}
+
+	// Add language-specific routes for each supported language
+	for _, lang := range i18n.Supported {
+		prefix := i18n.URLFor(lang, "")
+
+		if lang == i18n.DefaultLang {
+			// English routes (no prefix)
+			routes = append(routes, []apiRoute{
+				{http.MethodGet, "/", a.homeHandler},
+				{http.MethodGet, "/blog/{slug}", a.articleHandler},
+				{http.MethodGet, "/tags/{tag}", a.tagHandler},
+				{http.MethodGet, "/experiments/{slug}", a.experimentHandler},
+			}...)
+		} else {
+			// Other language routes (with prefix)
+			routes = append(routes, []apiRoute{
+				{http.MethodGet, prefix, a.homeHandler},
+				{http.MethodGet, prefix + "/blog/{slug}", a.articleHandler},
+				{http.MethodGet, prefix + "/tags/{tag}", a.tagHandler},
+				{http.MethodGet, prefix + "/experiments/{slug}", a.experimentHandler},
+			}...)
+		}
+	}
+
+	return routes
 }
 
 // router builds the chi router from the provided route table, mounts the
@@ -86,13 +104,17 @@ func router(a *app, routes []apiRoute) http.Handler {
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch {
-			case strings.HasPrefix(r.URL.Path, "/assets/experiments/"):
+			case len(r.URL.Path) > len("/assets/experiments/") && r.URL.Path[:len("/assets/experiments/")] == "/assets/experiments/":
 				// Experiment scripts change with the code; never cache them.
 				w.Header().Set("Cache-Control", "no-cache")
-			case strings.HasPrefix(r.URL.Path, "/assets/"):
+			case len(r.URL.Path) > len("/assets/") && r.URL.Path[:len("/assets/")] == "/assets/":
 				w.Header().Set("Cache-Control", "public, max-age=604800, stale-while-revalidate=86400")
-			case r.URL.Path == "/app.js" || r.URL.Path == "/god.js" || r.URL.Path == "/borum-loader.js" || r.URL.Path == "/god-editor.js" || r.URL.Path == "/god-autosave.js" || r.URL.Path == "/styles.css" || strings.HasPrefix(r.URL.Path, "/vendor/"):
+			case r.URL.Path == "/app.js" || r.URL.Path == "/god.js" || r.URL.Path == "/borum-loader.js" || r.URL.Path == "/god-editor.js" || r.URL.Path == "/god-autosave.js" || r.URL.Path == "/styles.css":
 				w.Header().Set("Cache-Control", "no-cache")
+			default:
+				if len(r.URL.Path) > len("/vendor/") && r.URL.Path[:len("/vendor/")] == "/vendor/" {
+					w.Header().Set("Cache-Control", "no-cache")
+				}
 			}
 			next.ServeHTTP(w, r)
 		})
@@ -103,10 +125,7 @@ func router(a *app, routes []apiRoute) http.Handler {
 	// Language detection middleware
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			lang := "en"
-			if strings.HasPrefix(r.URL.Path, "/pt/") || r.URL.Path == "/pt" {
-				lang = "pt"
-			}
+			lang := i18n.LangFromPath(r.URL.Path)
 			ctx := context.WithValue(r.Context(), "lang", lang)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})

@@ -1,3 +1,23 @@
+# ⚠️ CRITICAL WARNING ⚠️
+
+**NEVER COMMIT, PUSH, OR BUMP VERSION WITHOUT EXPLICIT PERMISSION!**
+
+- Do NOT run `git commit`
+- Do NOT run `git push`
+- Do NOT bump VERSION
+- Do NOT run `git add -A` unless explicitly told to commit
+
+**YOU MUST ASK FIRST. WAIT FOR EXPLICIT "commit" or "push" ORDER.**
+
+This rule overrides everything else. Breaking it loses trust.
+
+**ALWAYS VERIFY CODE COMPILES:**
+- Run `go build ./...` after every code change
+- Never proceed to next task until code compiles cleanly
+- If compilation fails, fix it immediately before continuing
+
+---
+
 # Security
 
 - Read `SECURITY.md` before any security work. It is the audit report and to-do list. Remove items only after they are implemented and verified, and never remove unfixed items.
@@ -64,6 +84,7 @@
 - Set `[IN_PROGRESS]` when you start a task, `[DONE]` when done — in both this list and the task file.
 
 - 001 [DONE] Top loading indicator between page navigations
+- 002 [DONE] Perfect the language (i18n) implementation
 
 # Documentation
 

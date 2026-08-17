@@ -58,15 +58,6 @@ func (a *app) articlesJSONHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// articlesPTJSONHandler serves Portuguese articles for the command palette.
-func (a *app) articlesPTJSONHandler(w http.ResponseWriter, r *http.Request) {
-	items := content.ListByLang(r.Context(), "pt")
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	if err := json.NewEncoder(w).Encode(items); err != nil {
-		a.errorLogger.Print(err.Error())
-	}
-}
-
 // articleAutoSaveRequest is the JSON body for the draft auto-save endpoint.
 type articleAutoSaveRequest struct {
 	Slug         string   `json:"slug"`
@@ -115,11 +106,11 @@ func (a *app) articleCreateDraftHandler(w http.ResponseWriter, r *http.Request) 
 		slug = makeSlug(req.Title)
 	}
 	// Ensure slug uniqueness by appending a suffix if it already exists.
-	existing := content.GetArticleAny(r.Context(), slug, "en")
+	existing := content.GetArticleAny(r.Context(), slug)
 	if existing != nil {
 		for i := 2; ; i++ {
 			candidate := fmt.Sprintf("%s-%d", slug, i)
-			if content.GetArticleAny(r.Context(), candidate, "en") == nil {
+			if content.GetArticleAny(r.Context(), candidate) == nil {
 				slug = candidate
 				break
 			}
@@ -160,7 +151,7 @@ func (a *app) articleUpdateDraftHandler(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, `{"error":"invalid json"}`, http.StatusBadRequest)
 		return
 	}
-	existing := content.GetArticleAny(r.Context(), slug, "en")
+	existing := content.GetArticleAny(r.Context(), slug)
 	if existing == nil {
 		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
 		return
@@ -171,7 +162,7 @@ func (a *app) articleUpdateDraftHandler(w http.ResponseWriter, r *http.Request) 
 		newSlug = slug
 	}
 	if existing.Status == "draft" && newSlug != slug {
-		if err := content.ChangeSlug(r.Context(), slug, newSlug, "en"); err != nil {
+		if err := content.ChangeSlug(r.Context(), slug, newSlug); err != nil {
 			a.errorLogger.Print(err.Error())
 			http.Error(w, `{"error":"slug change failed"}`, http.StatusInternalServerError)
 			return

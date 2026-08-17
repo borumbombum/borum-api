@@ -78,6 +78,7 @@ type pageData struct {
 	Version   string
 	LoggedIn  bool
 	Lang      string
+	Host      string
 }
 
 // newPageData builds the shared view model for a page with the given active
@@ -96,6 +97,7 @@ func (a *app) newPageData(r *http.Request, active string) pageData {
 		Version:   a.version,
 		LoggedIn:  loggedIn,
 		Lang:      lang,
+		Host:      r.Host,
 	}
 }
 
@@ -265,11 +267,36 @@ func (a *app) homeHandler(w http.ResponseWriter, r *http.Request) {
 func (a *app) articleHandler(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 	lang := r.Context().Value("lang").(string)
-	art := content.GetArticle(r.Context(), slug, lang)
+	
+	// Get base article (English)
+	art := content.GetArticle(r.Context(), slug)
 	if art == nil {
 		a.notFoundHandler(w, r)
 		return
 	}
+	
+	// If non-English, try to load translation and merge
+	if lang != "en" {
+		if trans := content.GetTranslation(r.Context(), slug, lang); trans != nil {
+			// Merge translation into article (non-empty fields override)
+			if trans.Title != "" {
+				art.Title = trans.Title
+			}
+			if trans.Subtitle != "" {
+				art.Subtitle = trans.Subtitle
+			}
+			if trans.Excerpt != "" {
+				art.Excerpt = trans.Excerpt
+			}
+			if trans.ImageCaption != "" {
+				art.ImageCaption = trans.ImageCaption
+			}
+			if trans.Body != "" {
+				art.Body = trans.Body
+			}
+		}
+	}
+	
 	translationSlug := content.GetTranslationSlug(r.Context(), slug, lang)
 	data := struct {
 		pageData
@@ -283,7 +310,12 @@ func (a *app) articleHandler(w http.ResponseWriter, r *http.Request) {
 // tagHandler renders the archive filtered by one tag.
 func (a *app) tagHandler(w http.ResponseWriter, r *http.Request) {
 	tag := chi.URLParam(r, "tag")
-	arts := content.List(r.Context())
+	lang := r.Context().Value("lang").(string)
+	
+	// Get articles for the requested language
+	arts := content.ListByLang(r.Context(), lang)
+	
+	// Filter by tag
 	filtered := make([]content.ArticleSummary, 0, len(arts))
 	for _, art := range arts {
 		for _, t := range art.Tags {
@@ -301,7 +333,8 @@ func (a *app) tagHandler(w http.ResponseWriter, r *http.Request) {
 		pageData
 		Tag      string
 		Articles []content.ArticleSummary
-	}{pageData: a.newPageData(r, "articles"), Tag: tag, Articles: filtered}
+		Lang     string
+	}{pageData: a.newPageData(r, "articles"), Tag: tag, Articles: filtered, Lang: lang}
 	renderPage(w, http.StatusOK, "tag", data)
 }
 

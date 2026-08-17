@@ -10,30 +10,37 @@ import (
 	"encoding/json"
 	"sync"
 	"time"
+
+	"github.com/borumbombum/borum-api/internal/i18n"
 )
 
-// Article is a single blog post (full row, used by the article page).
+// Article is a single blog post (base row, used by the article page).
+// Translations are stored in article_translations table.
 type Article struct {
-	Slug           string   `json:"slug"`
-	Title          string   `json:"title"`
-	Subtitle       string   `json:"subtitle"`
-	Date           string   `json:"date"`
-	Tags           []string `json:"tags"`
-	Excerpt        string   `json:"excerpt"`
-	Image          string   `json:"image,omitempty"`
-	ImageCaption   string   `json:"imageCaption,omitempty"`
-	InitialLove    int      `json:"initialLove"`
-	Star           bool     `json:"star"`
-	Featured       bool     `json:"featured"`
-	Body           string   `json:"body"`
-	Status         string   `json:"status"`
-	Lang           string   `json:"lang"`
-	TranslationOf  string   `json:"translationOf,omitempty"`
-	TitlePT        string   `json:"titlePt,omitempty"`
-	SubtitlePT     string   `json:"subtitlePt,omitempty"`
-	ExcerptPT      string   `json:"excerptPt,omitempty"`
-	ImageCaptionPT string   `json:"imageCaptionPt,omitempty"`
-	BodyPT         string   `json:"bodyPt,omitempty"`
+	Slug         string   `json:"slug"`
+	Title        string   `json:"title"`
+	Subtitle     string   `json:"subtitle"`
+	Date         string   `json:"date"`
+	Tags         []string `json:"tags"`
+	Excerpt      string   `json:"excerpt"`
+	Image        string   `json:"image,omitempty"`
+	ImageCaption string   `json:"imageCaption,omitempty"`
+	InitialLove  int      `json:"initialLove"`
+	Star         bool     `json:"star"`
+	Featured     bool     `json:"featured"`
+	Body         string   `json:"body"`
+	Status       string   `json:"status"`
+}
+
+// ArticleTranslation holds translated content for a specific language.
+type ArticleTranslation struct {
+	Slug         string `json:"slug"`
+	Lang         string `json:"lang"`
+	Title        string `json:"title"`
+	Subtitle     string `json:"subtitle"`
+	Excerpt      string `json:"excerpt"`
+	ImageCaption string `json:"imageCaption"`
+	Body         string `json:"body"`
 }
 
 // ArticleSummary is the lightweight row used by the archive (home and tag)
@@ -48,7 +55,6 @@ type ArticleSummary struct {
 	Image        string
 	ImageCaption string
 	Status       string
-	Lang         string
 }
 
 // PaletteItem is the minimal shape served to the command palette.
@@ -128,18 +134,23 @@ var (
 // descending, refreshed from the database at most once per cacheTTL.
 func List(ctx context.Context) []ArticleSummary {
 	return summaries.get(ctx, func(ctx context.Context) ([]ArticleSummary, error) {
-		return querySummaries(ctx, "en")
+		return querySummaries(ctx)
 	})
 }
 
 // ListByLang returns the article summaries for a specific language.
+// For English, returns base rows. For other languages, filters by translation existence.
 func ListByLang(ctx context.Context, lang string) []ArticleSummary {
-	if lang == "en" {
+	if lang == i18n.DefaultLang {
 		return List(ctx)
 	}
-	rows, err := store.db.QueryContext(ctx, `SELECT slug, title, date, tags,
-		star, featured, image, image_caption, status, lang
-		FROM articles WHERE status = 'published' AND lang = ? ORDER BY date DESC`, lang)
+	// For non-English, join with translations to only show translated articles
+	rows, err := store.db.QueryContext(ctx, `SELECT a.slug, a.title, a.date, a.tags,
+		a.star, a.featured, a.image, a.image_caption, a.status
+		FROM articles a
+		INNER JOIN article_translations t ON a.slug = t.slug
+		WHERE a.status = 'published' AND t.lang = ?
+		ORDER BY a.date DESC`, lang)
 	if err != nil {
 		return nil
 	}
@@ -154,7 +165,7 @@ func ListByLang(ctx context.Context, lang string) []ArticleSummary {
 			feat int
 		)
 		if err := rows.Scan(&s.Slug, &s.Title, &s.Date, &tags,
-			&star, &feat, &s.Image, &s.ImageCaption, &s.Status, &s.Lang); err != nil {
+			&star, &feat, &s.Image, &s.ImageCaption, &s.Status); err != nil {
 			return nil
 		}
 		s.Tags = unmarshalTags(tags)
@@ -173,10 +184,10 @@ func Palette(ctx context.Context) []PaletteItem {
 	})
 }
 
-// GetArticle returns the full article for the given slug and language, or nil when it does
-// not exist. Each slug+lang is cached separately; only the requested row is read.
-func GetArticle(ctx context.Context, slug, lang string) *Article {
-	key := slug + ":" + lang
+// GetArticle returns the full article for the given slug, or nil when it does
+// not exist. Only published articles are returned.
+func GetArticle(ctx context.Context, slug string) *Article {
+	key := slug
 	a, ok := articleStore.get(ctx, key)
 	if !ok {
 		return nil
@@ -188,7 +199,7 @@ func GetArticle(ctx context.Context, slug, lang string) *Article {
 // list. It does not cache because it is only called from /god pages.
 func ListAll(ctx context.Context) []ArticleSummary {
 	rows, err := store.db.QueryContext(ctx, `SELECT slug, title, date, tags,
-		star, featured, image, image_caption, status, lang
+		star, featured, image, image_caption, status
 		FROM articles ORDER BY date DESC`)
 	if err != nil {
 		return nil
@@ -204,7 +215,7 @@ func ListAll(ctx context.Context) []ArticleSummary {
 			feat int
 		)
 		if err := rows.Scan(&s.Slug, &s.Title, &s.Date, &tags,
-			&star, &feat, &s.Image, &s.ImageCaption, &s.Status, &s.Lang); err != nil {
+			&star, &feat, &s.Image, &s.ImageCaption, &s.Status); err != nil {
 			return nil
 		}
 		s.Tags = unmarshalTags(tags)
@@ -217,7 +228,7 @@ func ListAll(ctx context.Context) []ArticleSummary {
 
 // GetArticleAny returns the full article for the given slug regardless of
 // status, for admin edit pages. Uncached because it is only called from /god.
-func GetArticleAny(ctx context.Context, slug, lang string) *Article {
+func GetArticleAny(ctx context.Context, slug string) *Article {
 	var (
 		a        Article
 		tags     string
@@ -225,10 +236,10 @@ func GetArticleAny(ctx context.Context, slug, lang string) *Article {
 		featured int
 	)
 	err := store.db.QueryRowContext(ctx, `SELECT slug, title, subtitle, date, tags,
-		excerpt, image, image_caption, initial_love, star, featured, body, status, lang, translation_of
-		FROM articles WHERE slug = ? AND lang = ?`, slug, lang).Scan(
+		excerpt, image, image_caption, initial_love, star, featured, body, status
+		FROM articles WHERE slug = ?`, slug).Scan(
 		&a.Slug, &a.Title, &a.Subtitle, &a.Date, &tags,
-		&a.Excerpt, &a.Image, &a.ImageCaption, &a.InitialLove, &star, &featured, &a.Body, &a.Status, &a.Lang, &a.TranslationOf)
+		&a.Excerpt, &a.Image, &a.ImageCaption, &a.InitialLove, &star, &featured, &a.Body, &a.Status)
 	if err != nil {
 		return nil
 	}
@@ -262,17 +273,8 @@ func (c *articleCache) get(ctx context.Context, key string) (Article, bool) {
 		a, ok := c.by[key]
 		return a, ok
 	}
-	// Parse key as "slug:lang"
-	slug := key
-	lang := "en"
-	for i := len(key) - 1; i >= 0; i-- {
-		if key[i] == ':' {
-			slug = key[:i]
-			lang = key[i+1:]
-			break
-		}
-	}
-	a, err := queryArticle(ctx, slug, lang)
+	// Parse key as "slug" (no more :lang suffix)
+	a, err := queryArticle(ctx, key)
 	if err != nil {
 		a, ok := c.by[key]
 		return a, ok
@@ -296,7 +298,7 @@ func (c *articleCache) get(ctx context.Context, key string) (Article, bool) {
 	return a, true
 }
 
-// remove drops one key (slug:lang) from the per-article cache, used by Invalidate after
+// remove drops one key (slug) from the per-article cache, used by Invalidate after
 // an admin edit so the next article read hits the database.
 func (c *articleCache) remove(key string) {
 	c.mu.Lock()
@@ -343,10 +345,10 @@ func sizeOf(a Article) int {
 
 // querySummaries loads the archive columns only, never the heavy fields.
 // Only published articles are included.
-func querySummaries(ctx context.Context, lang string) ([]ArticleSummary, error) {
+func querySummaries(ctx context.Context) ([]ArticleSummary, error) {
 	rows, err := store.db.QueryContext(ctx, `SELECT slug, title, date, tags,
-		star, featured, image, image_caption, status, lang
-		FROM articles WHERE status = 'published' AND lang = ? ORDER BY date DESC`, lang)
+		star, featured, image, image_caption, status
+		FROM articles WHERE status = 'published' ORDER BY date DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -361,7 +363,7 @@ func querySummaries(ctx context.Context, lang string) ([]ArticleSummary, error) 
 			feat int
 		)
 		if err := rows.Scan(&s.Slug, &s.Title, &s.Date, &tags,
-			&star, &feat, &s.Image, &s.ImageCaption, &s.Status, &s.Lang); err != nil {
+			&star, &feat, &s.Image, &s.ImageCaption, &s.Status); err != nil {
 			return nil, err
 		}
 		s.Tags = unmarshalTags(tags)
@@ -375,7 +377,7 @@ func querySummaries(ctx context.Context, lang string) ([]ArticleSummary, error) 
 // queryPalette loads only the fields the command palette reads.
 // Only published articles are included.
 func queryPalette(ctx context.Context) ([]PaletteItem, error) {
-	rows, err := store.db.QueryContext(ctx, `SELECT slug, title, tags, lang FROM articles WHERE status = 'published'`)
+	rows, err := store.db.QueryContext(ctx, `SELECT slug, title, tags FROM articles WHERE status = 'published'`)
 	if err != nil {
 		return nil, err
 	}
@@ -386,9 +388,8 @@ func queryPalette(ctx context.Context) ([]PaletteItem, error) {
 		var (
 			it   PaletteItem
 			tags string
-			lang string
 		)
-		if err := rows.Scan(&it.Slug, &it.Title, &tags, &lang); err != nil {
+		if err := rows.Scan(&it.Slug, &it.Title, &tags); err != nil {
 			return nil, err
 		}
 		it.Tags = unmarshalTags(tags)
@@ -397,9 +398,9 @@ func queryPalette(ctx context.Context) ([]PaletteItem, error) {
 	return items, rows.Err()
 }
 
-// queryArticle loads one full row by slug and language (primary key lookup).
+// queryArticle loads one full row by slug (primary key lookup).
 // Only published articles are returned.
-func queryArticle(ctx context.Context, slug, lang string) (Article, error) {
+func queryArticle(ctx context.Context, slug string) (Article, error) {
 	var (
 		a        Article
 		tags     string
@@ -407,10 +408,10 @@ func queryArticle(ctx context.Context, slug, lang string) (Article, error) {
 		featured int
 	)
 	err := store.db.QueryRowContext(ctx, `SELECT slug, title, subtitle, date, tags,
-		excerpt, image, image_caption, initial_love, star, featured, body, status, lang, translation_of
-		FROM articles WHERE slug = ? AND lang = ? AND status = 'published'`, slug, lang).Scan(
+		excerpt, image, image_caption, initial_love, star, featured, body, status
+		FROM articles WHERE slug = ? AND status = 'published'`, slug).Scan(
 		&a.Slug, &a.Title, &a.Subtitle, &a.Date, &tags,
-		&a.Excerpt, &a.Image, &a.ImageCaption, &a.InitialLove, &star, &featured, &a.Body, &a.Status, &a.Lang, &a.TranslationOf)
+		&a.Excerpt, &a.Image, &a.ImageCaption, &a.InitialLove, &star, &featured, &a.Body, &a.Status)
 	if err != nil {
 		return Article{}, err
 	}
@@ -434,7 +435,7 @@ func Principles() []Principle {
 	return principles
 }
 
-// Save inserts the article or, when the slug+lang already exists, updates every
+// Save inserts the article or, when the slug already exists, updates every
 // column. The write goes straight to the database; caches are invalidated so
 // the next read sees the new data immediately.
 func Save(ctx context.Context, a Article) error {
@@ -446,54 +447,27 @@ func Save(ctx context.Context, a Article) error {
 	if status == "" {
 		status = "published"
 	}
-	lang := a.Lang
-	if lang == "" {
-		lang = "en"
-	}
-	
-	// For Portuguese, save translation fields
-	if lang == "pt" {
-		_, err = store.db.ExecContext(ctx, `INSERT INTO articles
-			(slug, title, subtitle, date, tags, excerpt, image, image_caption,
-			 initial_love, star, featured, body, status, lang, translation_of)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-			ON CONFLICT(slug, lang) DO UPDATE SET
-				title = excluded.title,
-				subtitle = excluded.subtitle,
-				date = excluded.date,
-				tags = excluded.tags,
-				excerpt = excluded.excerpt,
-				image = excluded.image,
-				image_caption = excluded.image_caption,
-				initial_love = excluded.initial_love,
-				star = excluded.star,
-				featured = excluded.featured,
-				body = excluded.body,
-				status = excluded.status,
-				translation_of = excluded.translation_of`,
-			a.Slug, a.Title, a.Subtitle, a.Date, string(tags), a.Excerpt, a.Image,
-			a.ImageCaption, a.InitialLove, boolInt(a.Star), boolInt(a.Featured), a.Body, status, lang, a.TranslationOf)
-	} else {
-		_, err = store.db.ExecContext(ctx, `INSERT INTO articles
-			(slug, title, subtitle, date, tags, excerpt, image, image_caption,
-			 initial_love, star, featured, body, status, lang, translation_of)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-			ON CONFLICT(slug, lang) DO UPDATE SET
-				title = excluded.title,
-				subtitle = excluded.subtitle,
-				date = excluded.date,
-				tags = excluded.tags,
-				excerpt = excluded.excerpt,
-				image = excluded.image,
-				image_caption = excluded.image_caption,
-				initial_love = excluded.initial_love,
-				star = excluded.star,
-				featured = excluded.featured,
-				body = excluded.body,
-				status = excluded.status`,
-			a.Slug, a.Title, a.Subtitle, a.Date, string(tags), a.Excerpt, a.Image,
-			a.ImageCaption, a.InitialLove, boolInt(a.Star), boolInt(a.Featured), a.Body, status, lang, a.TranslationOf)
-	}
+
+	// Single SQL statement for all languages
+	_, err = store.db.ExecContext(ctx, `INSERT INTO articles
+		(slug, title, subtitle, date, tags, excerpt, image, image_caption,
+		 initial_love, star, featured, body, status)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(slug) DO UPDATE SET
+			title = excluded.title,
+			subtitle = excluded.subtitle,
+			date = excluded.date,
+			tags = excluded.tags,
+			excerpt = excluded.excerpt,
+			image = excluded.image,
+			image_caption = excluded.image_caption,
+			initial_love = excluded.initial_love,
+			star = excluded.star,
+			featured = excluded.featured,
+			body = excluded.body,
+			status = excluded.status`,
+		a.Slug, a.Title, a.Subtitle, a.Date, string(tags), a.Excerpt, a.Image,
+		a.ImageCaption, a.InitialLove, boolInt(a.Star), boolInt(a.Featured), a.Body, status)
 	if err != nil {
 		return err
 	}
@@ -501,10 +475,15 @@ func Save(ctx context.Context, a Article) error {
 	return nil
 }
 
-// Delete removes the article with the given slug and language and drops it from every
-// cache so public pages stop showing it immediately.
-func Delete(ctx context.Context, slug, lang string) error {
-	if _, err := store.db.ExecContext(ctx, `DELETE FROM articles WHERE slug = ? AND lang = ?`, slug, lang); err != nil {
+// Delete removes the article with the given slug and all its translations,
+// then drops it from every cache so public pages stop showing it immediately.
+func Delete(ctx context.Context, slug string) error {
+	// Delete translations first (foreign key constraint)
+	if _, err := store.db.ExecContext(ctx, `DELETE FROM article_translations WHERE slug = ?`, slug); err != nil {
+		return err
+	}
+	// Delete the base article
+	if _, err := store.db.ExecContext(ctx, `DELETE FROM articles WHERE slug = ?`, slug); err != nil {
 		return err
 	}
 	Invalidate(slug)
@@ -512,10 +491,16 @@ func Delete(ctx context.Context, slug, lang string) error {
 }
 
 // ChangeSlug renames an article's primary key. Only call this for drafts whose
-// slug can still change. SQLite allows updating the PRIMARY KEY directly.
-func ChangeSlug(ctx context.Context, oldSlug, newSlug, lang string) error {
+// slug can still change. Also updates translation keys.
+func ChangeSlug(ctx context.Context, oldSlug, newSlug string) error {
+	// Update base article
 	if _, err := store.db.ExecContext(ctx,
-		`UPDATE articles SET slug = ? WHERE slug = ? AND lang = ?`, newSlug, oldSlug, lang); err != nil {
+		`UPDATE articles SET slug = ? WHERE slug = ?`, newSlug, oldSlug); err != nil {
+		return err
+	}
+	// Update translations
+	if _, err := store.db.ExecContext(ctx,
+		`UPDATE article_translations SET slug = ? WHERE slug = ?`, newSlug, oldSlug); err != nil {
 		return err
 	}
 	Invalidate(oldSlug)
@@ -527,47 +512,85 @@ func ChangeSlug(ctx context.Context, oldSlug, newSlug, lang string) error {
 func Invalidate(slug string) {
 	summaries.reset()
 	palette.reset()
-	// Remove all language variants from cache
-	for _, lang := range []string{"en", "pt"} {
-		articleStore.remove(slug + ":" + lang)
+	articleStore.remove(slug)
+}
+
+// GetTranslation returns the full translation for the given slug and language,
+// or nil when no translation exists.
+func GetTranslation(ctx context.Context, slug, lang string) *ArticleTranslation {
+	if lang == i18n.DefaultLang {
+		return nil // English is the base row, not a translation
 	}
+	var t ArticleTranslation
+	err := store.db.QueryRowContext(ctx,
+		`SELECT slug, lang, title, subtitle, excerpt, image_caption, body
+		FROM article_translations WHERE slug = ? AND lang = ?`,
+		slug, lang).Scan(&t.Slug, &t.Lang, &t.Title, &t.Subtitle, &t.Excerpt, &t.ImageCaption, &t.Body)
+	if err != nil {
+		return nil
+	}
+	return &t
+}
+
+// SaveTranslation inserts or updates a translation for the given slug and language.
+func SaveTranslation(ctx context.Context, t ArticleTranslation) error {
+	_, err := store.db.ExecContext(ctx, `INSERT INTO article_translations
+		(slug, lang, title, subtitle, excerpt, image_caption, body)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(slug, lang) DO UPDATE SET
+			title = excluded.title,
+			subtitle = excluded.subtitle,
+			excerpt = excluded.excerpt,
+			image_caption = excluded.image_caption,
+			body = excluded.body`,
+		t.Slug, t.Lang, t.Title, t.Subtitle, t.Excerpt, t.ImageCaption, t.Body)
+	if err != nil {
+		return err
+	}
+	Invalidate(t.Slug)
+	return nil
+}
+
+// DeleteTranslation removes a single translation for the given slug and language.
+func DeleteTranslation(ctx context.Context, slug, lang string) error {
+	if _, err := store.db.ExecContext(ctx,
+		`DELETE FROM article_translations WHERE slug = ? AND lang = ?`, slug, lang); err != nil {
+		return err
+	}
+	Invalidate(slug)
+	return nil
 }
 
 // GetTranslationSlug returns the slug of the alternate language version of an article,
 // or empty string if no translation exists.
 func GetTranslationSlug(ctx context.Context, slug, lang string) string {
 	var otherLang string
-	if lang == "en" {
+	if lang == i18n.DefaultLang {
 		otherLang = "pt"
 	} else {
-		otherLang = "en"
+		otherLang = i18n.DefaultLang
 	}
-	
-	// First try: look for an article with translation_of pointing to this slug
+
+	// For non-English, check if translation exists
+	if otherLang != i18n.DefaultLang {
+		var transSlug string
+		err := store.db.QueryRowContext(ctx,
+			`SELECT slug FROM article_translations WHERE slug = ? AND lang = ?`,
+			slug, otherLang).Scan(&transSlug)
+		if err == nil {
+			return transSlug
+		}
+	}
+
+	// For English, check if translation exists for the other language
 	var transSlug string
 	err := store.db.QueryRowContext(ctx,
-		`SELECT slug FROM articles WHERE translation_of = ? AND lang = ? AND status = 'published' LIMIT 1`,
+		`SELECT slug FROM article_translations WHERE slug = ? AND lang = ?`,
 		slug, otherLang).Scan(&transSlug)
 	if err == nil {
 		return transSlug
 	}
-	
-	// Second try: look for an article where this slug is the translation_of
-	err = store.db.QueryRowContext(ctx,
-		`SELECT slug FROM articles WHERE slug = ? AND lang = ? AND status = 'published'`, 
-		slug, otherLang).Scan(&transSlug)
-	if err == nil {
-		return transSlug
-	}
-	
-	// Third try: look for article with same slug in other language
-	err = store.db.QueryRowContext(ctx,
-		`SELECT slug FROM articles WHERE slug = ? AND lang = ? AND status = 'published'`,
-		slug, otherLang).Scan(&transSlug)
-	if err == nil {
-		return transSlug
-	}
-	
+
 	return ""
 }
 
