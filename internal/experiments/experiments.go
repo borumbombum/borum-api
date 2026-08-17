@@ -107,22 +107,11 @@ var store struct {
 	db *sql.DB
 }
 
-// Init wires the experiment store to the database and seeds one row per
-// registry entry (INSERT OR IGNORE keeps admin edits to enabled/sort). New
-// experiments default to enabled and their folder-prefix order.
+// Init wires the experiment store to the database.
 func Init(db *sql.DB) error {
 	store.mu.Lock()
 	store.db = db
 	store.mu.Unlock()
-
-	ctx := context.Background()
-	for _, e := range all {
-		if _, err := db.ExecContext(ctx,
-			`INSERT OR IGNORE INTO experiments (slug, enabled, sort) VALUES (?, 1, ?)`,
-			e.Slug, defaultOrder(e.Dir)); err != nil {
-			return fmt.Errorf("seed experiment %s: %w", e.Slug, err)
-		}
-	}
 	return nil
 }
 

@@ -21,6 +21,15 @@ This rule overrides everything else. Breaking it loses trust.
 # Security
 
 - Read `SECURITY.md` before any security work. It is the audit report and to-do list. Remove items only after they are implemented and verified, and never remove unfixed items.
+- **NEVER commit WebDAV credentials, Nostr private keys, or any auth tokens** — store in `.env` or environment variables only.
+- **NEVER log or expose sensitive data** — no API keys, passwords, or private keys in logs, error messages, or responses.
+
+# Migrations
+
+- **NEVER put sensitive data in migrations** — no passwords, API keys, tokens, personal data, or real article content.
+- Migrations are for schema only: CREATE TABLE, ALTER TABLE, indexes.
+- Seed data (articles, experiments) goes in separate scripts or is created via the admin UI.
+- If a migration contains sensitive data, it's a security breach — fix immediately.
 
 ## Response Style
 
