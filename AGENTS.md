@@ -63,7 +63,19 @@
 - Status markers: `[TODO]` (not started), `[IN_PROGRESS]` (agent working on it), `[DONE]` (verified complete).
 - Set `[IN_PROGRESS]` when you start a task, `[DONE]` when done — in both this list and the task file.
 
-- 001 [IN_PROGRESS] Top loading indicator between page navigations
+- 001 [DONE] Top loading indicator between page navigations
+
+# Languages
+
+- Supported languages: `en` (base), `pt`.
+- English is the default language. No URL prefix.
+- Other languages use subpath prefix: `/pt/blog/{slug}`, `/pt/experiments/{slug}`.
+- Articles store translations as separate rows with `lang` and `translation_of` columns.
+- Experiments store translations in `experiment_translations` table keyed by `(slug, lang)`.
+- To add a new language: add code to `supportedLangs` list, add route prefixes, add admin fields.
+- `hreflang` tags link all translations on every page. `x-default` points to English.
+- `html lang` attribute is dynamic, set per request based on URL prefix.
+- Admin forms show all languages side by side. Empty fields = no translation.
 
 # Versioning
 

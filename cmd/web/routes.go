@@ -4,6 +4,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
@@ -32,6 +33,13 @@ func (a *app) apiRoutes() []apiRoute {
 		{http.MethodPost, "/experiments/img2webp/convert", a.img2webpConvertHandler},
 		{http.MethodGet, "/api/health", a.healthHandler},
 		{http.MethodGet, "/data/articles.json", a.articlesJSONHandler},
+		{http.MethodGet, "/data/articles-pt.json", a.articlesPTJSONHandler},
+
+		// Portuguese routes
+		{http.MethodGet, "/pt", a.homeHandler},
+		{http.MethodGet, "/pt/blog/{slug}", a.articleHandler},
+		{http.MethodGet, "/pt/tags/{tag}", a.tagHandler},
+		{http.MethodGet, "/pt/experiments/{slug}", a.experimentHandler},
 
 		{http.MethodGet, "/login", a.loginPageHandler},
 		{http.MethodPost, "/api/v1/auth/login", a.loginHandler},
@@ -91,6 +99,18 @@ func router(a *app, routes []apiRoute) http.Handler {
 	})
 
 	r.Use(middleware.Compress(5))
+
+	// Language detection middleware
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			lang := "en"
+			if strings.HasPrefix(r.URL.Path, "/pt/") || r.URL.Path == "/pt" {
+				lang = "pt"
+			}
+			ctx := context.WithValue(r.Context(), "lang", lang)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	})
 
 	// Register all routes
 	for _, rt := range routes {

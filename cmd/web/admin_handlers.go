@@ -29,6 +29,7 @@ type godData struct {
 	Article     *content.Article
 	Tags        string // comma-separated, for the form input
 	Experiments []experiments.Item
+	Lang        string
 }
 
 // newGodData builds the shared admin view model, minting a CSRF token bound to
@@ -38,6 +39,7 @@ func (a *app) newGodData(r *http.Request, isNew bool) godData {
 		Version:  a.version,
 		LoggedIn: true,
 		IsNew:    isNew,
+		Lang:     "en",
 	}
 	if sess, ok := auth.SessionFrom(r.Context()); ok {
 		d.CSRF = a.auth.CSRF(sess.Token)
@@ -104,7 +106,15 @@ func (a *app) godExperimentIntroHandler(w http.ResponseWriter, r *http.Request) 
 		a.renderGodPage(w, http.StatusForbidden, "god_experiments", data)
 		return
 	}
-	if err := experiments.UpdateIntro(r.Context(), slug, r.FormValue("intro")); err != nil {
+	lang := r.FormValue("lang")
+	if lang == "" {
+		lang = "en"
+	}
+	intro := r.FormValue("intro")
+	if lang == "pt" {
+		intro = r.FormValue("intro_pt")
+	}
+	if err := experiments.UpdateIntro(r.Context(), slug, lang, intro); err != nil {
 		a.errorLogger.Print(err.Error())
 		data.Error = "could not save the experiment intro"
 		data.Experiments = experiments.List(r.Context())
@@ -202,7 +212,7 @@ func (a *app) godArticleDraftHandler(w http.ResponseWriter, r *http.Request) {
 	if art.Slug == "" {
 		art.Slug = makeSlug(art.Title)
 		// Ensure slug uniqueness.
-		for i := 2; content.GetArticleAny(r.Context(), art.Slug) != nil; i++ {
+		for i := 2; content.GetArticleAny(r.Context(), art.Slug, "en") != nil; i++ {
 			art.Slug = makeSlug(art.Title) + "-" + fmt.Sprintf("%d", i)
 		}
 	}
@@ -225,7 +235,7 @@ func (a *app) godArticleDraftHandler(w http.ResponseWriter, r *http.Request) {
 // godArticleEditHandler renders the edit form, pre-filled from the database.
 func (a *app) godArticleEditHandler(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
-	art := content.GetArticleAny(r.Context(), slug)
+	art := content.GetArticleAny(r.Context(), slug, "en")
 	if art == nil {
 		a.notFoundHandler(w, r)
 		return
@@ -243,7 +253,7 @@ func (a *app) godArticleUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	data := a.newGodData(r, false)
 	if !a.validCSRF(r) {
 		data.Error = "invalid request token, try again"
-		data.Article = content.GetArticleAny(r.Context(), slug)
+		data.Article = content.GetArticleAny(r.Context(), slug, "en")
 		a.renderGodPage(w, http.StatusForbidden, "god_form", data)
 		return
 	}
@@ -257,12 +267,12 @@ func (a *app) godArticleUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Preserve the existing love count and check if slug needs changing.
-	existing := content.GetArticleAny(r.Context(), slug)
+	existing := content.GetArticleAny(r.Context(), slug, "en")
 	if existing != nil {
 		art.InitialLove = existing.InitialLove
 		// Allow slug changes for drafts only.
 		if existing.Status == "draft" && art.Slug != "" && art.Slug != slug {
-			if err := content.ChangeSlug(r.Context(), slug, art.Slug); err != nil {
+			if err := content.ChangeSlug(r.Context(), slug, art.Slug, "en"); err != nil {
 				a.errorLogger.Print(err.Error())
 				data.Error = "could not update slug"
 				art.Slug = slug
@@ -300,7 +310,7 @@ func (a *app) godArticleDeleteHandler(w http.ResponseWriter, r *http.Request) {
 		a.renderGodPage(w, http.StatusForbidden, "god_list", data)
 		return
 	}
-	if err := content.Delete(r.Context(), slug); err != nil {
+	if err := content.Delete(r.Context(), slug, "en"); err != nil {
 		a.errorLogger.Print(err.Error())
 		data.Error = "could not delete the article"
 		data.Articles = content.List(r.Context())
@@ -332,16 +342,22 @@ func (a *app) sessionToken(r *http.Request) string {
 func parseArticleForm(r *http.Request) content.Article {
 	r.ParseForm()
 	art := content.Article{
-		Slug:         strings.TrimSpace(r.FormValue("slug")),
-		Title:        strings.TrimSpace(r.FormValue("title")),
-		Subtitle:     strings.TrimSpace(r.FormValue("subtitle")),
-		Date:         strings.TrimSpace(r.FormValue("date")),
-		Excerpt:      strings.TrimSpace(r.FormValue("excerpt")),
-		Image:        strings.TrimSpace(r.FormValue("image")),
-		ImageCaption: strings.TrimSpace(r.FormValue("image_caption")),
-		Star:         r.FormValue("star") == "on",
-		Featured:     r.FormValue("featured") == "on",
-		Body:         r.FormValue("body"),
+		Slug:           strings.TrimSpace(r.FormValue("slug")),
+		Title:          strings.TrimSpace(r.FormValue("title")),
+		Subtitle:       strings.TrimSpace(r.FormValue("subtitle")),
+		Date:           strings.TrimSpace(r.FormValue("date")),
+		Excerpt:        strings.TrimSpace(r.FormValue("excerpt")),
+		Image:          strings.TrimSpace(r.FormValue("image")),
+		ImageCaption:   strings.TrimSpace(r.FormValue("image_caption")),
+		Star:           r.FormValue("star") == "on",
+		Featured:       r.FormValue("featured") == "on",
+		Body:           r.FormValue("body"),
+		Lang:           strings.TrimSpace(r.FormValue("lang")),
+		TitlePT:        strings.TrimSpace(r.FormValue("title_pt")),
+		SubtitlePT:     strings.TrimSpace(r.FormValue("subtitle_pt")),
+		ExcerptPT:      strings.TrimSpace(r.FormValue("excerpt_pt")),
+		ImageCaptionPT: strings.TrimSpace(r.FormValue("image_caption_pt")),
+		BodyPT:         r.FormValue("body_pt"),
 	}
 	for _, t := range strings.Split(r.FormValue("tags"), ",") {
 		if t = strings.TrimSpace(t); t != "" {
@@ -411,7 +427,7 @@ func (a *app) godPreviewHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	art := content.GetArticleAny(r.Context(), pt.Slug)
+	art := content.GetArticleAny(r.Context(), pt.Slug, "en")
 	if art == nil {
 		a.notFoundHandler(w, r)
 		return

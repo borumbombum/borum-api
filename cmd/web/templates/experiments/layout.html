@@ -1,5 +1,21 @@
 {{define "title"}}{{.Experiment.Title}} — DOaGS{{end}}
-{{define "meta"}}<meta name="description" content="{{.Experiment.Description}}" />{{end}}
+{{define "meta"}}<meta name="description" content="{{.Experiment.Description}}" />
+<link rel="canonical" href="https://borum.dev{{if eq .Lang "pt"}}/pt{{end}}/experiments/{{.Experiment.Slug}}" />
+<link rel="alternate" hreflang="en" href="https://borum.dev/experiments/{{.Experiment.Slug}}" />
+<link rel="alternate" hreflang="pt" href="https://borum.dev/pt/experiments/{{.Experiment.Slug}}" />
+<link rel="alternate" hreflang="x-default" href="https://borum.dev/experiments/{{.Experiment.Slug}}" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "{{.Experiment.Title}}",
+  "description": "{{.Experiment.Description}}",
+  "url": "https://borum.dev{{if eq .Lang "pt"}}/pt{{end}}/experiments/{{.Experiment.Slug}}",
+  "applicationCategory": "UtilityApplication",
+  "inLanguage": "{{.Lang}}"
+}
+</script>
+{{end}}
 {{define "content"}}
 <div class="wrapper pt-1">
     {{template "header" .}}

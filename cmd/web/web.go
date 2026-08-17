@@ -77,6 +77,7 @@ type pageData struct {
 	Battery   battery.Snapshot
 	Version   string
 	LoggedIn  bool
+	Lang      string
 }
 
 // newPageData builds the shared view model for a page with the given active
@@ -85,11 +86,16 @@ type pageData struct {
 // admin affordances (the article edit button) without blocking anyone.
 func (a *app) newPageData(r *http.Request, active string) pageData {
 	_, loggedIn := auth.SessionFrom(r.Context())
+	lang := "en"
+	if l, ok := r.Context().Value("lang").(string); ok {
+		lang = l
+	}
 	return pageData{
 		ActiveNav: active,
 		Battery:   battery.Current(),
 		Version:   a.version,
 		LoggedIn:  loggedIn,
+		Lang:      lang,
 	}
 }
 
@@ -221,7 +227,8 @@ func renderPage(w http.ResponseWriter, status int, name string, data any) {
 
 // homeHandler renders the archive home page.
 func (a *app) homeHandler(w http.ResponseWriter, r *http.Request) {
-	arts := content.List(r.Context())
+	lang := r.Context().Value("lang").(string)
+	arts := content.ListByLang(r.Context(), lang)
 	all := experiments.List(r.Context())
 	var enabled []experiments.Item
 	for _, it := range all {
@@ -236,12 +243,14 @@ func (a *app) homeHandler(w http.ResponseWriter, r *http.Request) {
 		Tags        []string
 		Principles  []content.Principle
 		Experiments []experiments.Item
+		Lang        string
 	}{
 		pageData:    a.newPageData(r, "home"),
 		Articles:    arts,
 		Tags:        allTags(arts),
 		Principles:  content.Principles(),
 		Experiments: enabled,
+		Lang:        lang,
 	}
 	for i := range arts {
 		if arts[i].Featured {
@@ -255,15 +264,19 @@ func (a *app) homeHandler(w http.ResponseWriter, r *http.Request) {
 // articleHandler renders a single blog post.
 func (a *app) articleHandler(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
-	art := content.GetArticle(r.Context(), slug)
+	lang := r.Context().Value("lang").(string)
+	art := content.GetArticle(r.Context(), slug, lang)
 	if art == nil {
 		a.notFoundHandler(w, r)
 		return
 	}
+	translationSlug := content.GetTranslationSlug(r.Context(), slug, lang)
 	data := struct {
 		pageData
-		Article *content.Article
-	}{pageData: a.newPageData(r, "articles"), Article: art}
+		Article         *content.Article
+		Lang            string
+		TranslationSlug string
+	}{pageData: a.newPageData(r, "articles"), Article: art, Lang: lang, TranslationSlug: translationSlug}
 	renderPage(w, http.StatusOK, "article", data)
 }
 

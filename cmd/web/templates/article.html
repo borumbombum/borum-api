@@ -1,5 +1,23 @@
 {{define "title"}}{{.Article.Title}} — DOaGS{{end}}
-{{define "meta"}}<meta name="description" content="{{.Article.Excerpt}}" />{{end}}
+{{define "meta"}}<meta name="description" content="{{.Article.Excerpt}}" />
+<link rel="canonical" href="https://borum.dev{{if eq .Lang "pt"}}/pt{{end}}/blog/{{.Article.Slug}}" />
+<link rel="alternate" hreflang="en" href="https://borum.dev/blog/{{if ne .Lang "pt"}}{{.Article.Slug}}{{else}}{{.TranslationSlug}}{{end}}" />
+<link rel="alternate" hreflang="pt" href="https://borum.dev/pt/blog/{{if eq .Lang "pt"}}{{.Article.Slug}}{{else}}{{.TranslationSlug}}{{end}}" />
+<link rel="alternate" hreflang="x-default" href="https://borum.dev/blog/{{if ne .Lang "pt"}}{{.Article.Slug}}{{else}}{{.TranslationSlug}}{{end}}" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{{.Article.Title}}",
+  "description": "{{.Article.Excerpt}}",
+  "image": "{{.Article.Image}}",
+  "datePublished": "{{.Article.Date}}",
+  "author": { "@type": "Person", "name": "Borum" },
+  "inLanguage": "{{.Lang}}",
+  "mainEntityOfPage": { "@type": "WebPage", "@id": "https://borum.dev{{if eq .Lang "pt"}}/pt{{end}}/blog/{{.Article.Slug}}" }
+}
+</script>
+{{end}}
 {{define "content"}}
 <div class="wrapper pt-1">
     {{template "header" .}}

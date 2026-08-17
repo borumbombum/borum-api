@@ -37,6 +37,16 @@ type Item struct {
 	Sort    int
 	Number  int
 	Intro   string
+	IntroPT string
+}
+
+// ExperimentTranslation holds translated content for an experiment.
+type ExperimentTranslation struct {
+	Slug        string
+	Lang        string
+	Title       string
+	Description string
+	Intro       string
 }
 
 // all is the hardcoded registry: the source of truth for which experiments
@@ -187,20 +197,31 @@ func SetEnabled(ctx context.Context, slug string, enabled bool) error {
 
 // UpdateIntro replaces the admin-written intro text shown above the
 // experiment's form. Admin write; resets the cache.
-func UpdateIntro(ctx context.Context, slug string, intro string) error {
-	res, err := store.db.ExecContext(ctx,
-		`UPDATE experiments SET intro = ? WHERE slug = ?`, intro, slug)
-	if err != nil {
-		return err
-	}
-	if n, err := res.RowsAffected(); err == nil && n == 0 {
-		e := BySlug(slug)
-		if e == nil {
-			return fmt.Errorf("unknown experiment %s", slug)
+func UpdateIntro(ctx context.Context, slug, lang, intro string) error {
+	if lang == "en" {
+		res, err := store.db.ExecContext(ctx,
+			`UPDATE experiments SET intro = ? WHERE slug = ?`, intro, slug)
+		if err != nil {
+			return err
 		}
-		_, err = store.db.ExecContext(ctx,
-			`INSERT INTO experiments (slug, enabled, sort, intro) VALUES (?, 1, ?, ?)`,
-			slug, defaultOrder(e.Dir), intro)
+		if n, err := res.RowsAffected(); err == nil && n == 0 {
+			e := BySlug(slug)
+			if e == nil {
+				return fmt.Errorf("unknown experiment %s", slug)
+			}
+			_, err = store.db.ExecContext(ctx,
+				`INSERT INTO experiments (slug, enabled, sort, intro) VALUES (?, 1, ?, ?)`,
+				slug, defaultOrder(e.Dir), intro)
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		// For other languages, save to experiment_translations
+		_, err := store.db.ExecContext(ctx,
+			`INSERT INTO experiment_translations (slug, lang, title, description, intro) VALUES (?, ?, '', '', ?)
+			 ON CONFLICT(slug, lang) DO UPDATE SET intro = excluded.intro`,
+			slug, lang, intro)
 		if err != nil {
 			return err
 		}
@@ -279,6 +300,38 @@ func Move(ctx context.Context, slug string, dir int) error {
 	}
 	cache.reset()
 	return nil
+}
+
+// GetTranslation returns the translated content for an experiment, or nil if not found.
+func GetTranslation(ctx context.Context, slug, lang string) (*ExperimentTranslation, error) {
+	var t ExperimentTranslation
+	row := store.db.QueryRowContext(ctx,
+		`SELECT slug, lang, title, description, intro FROM experiment_translations WHERE slug = ? AND lang = ?`,
+		slug, lang)
+	err := row.Scan(&t.Slug, &t.Lang, &t.Title, &t.Description, &t.Intro)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+// SaveTranslation inserts or updates a translation for an experiment.
+func SaveTranslation(ctx context.Context, slug, lang, title, description, intro string) error {
+	_, err := store.db.ExecContext(ctx,
+		`INSERT INTO experiment_translations (slug, lang, title, description, intro) VALUES (?, ?, ?, ?, ?)
+		 ON CONFLICT(slug, lang) DO UPDATE SET title = excluded.title, description = excluded.description, intro = excluded.intro`,
+		slug, lang, title, description, intro)
+	return err
+}
+
+// DeleteTranslation removes a translation for an experiment.
+func DeleteTranslation(ctx context.Context, slug, lang string) error {
+	_, err := store.db.ExecContext(ctx,
+		`DELETE FROM experiment_translations WHERE slug = ? AND lang = ?`, slug, lang)
+	return err
 }
 
 // queryAll loads the stored state for every registry experiment. Slugs with

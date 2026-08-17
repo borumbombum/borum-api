@@ -1,4 +1,4 @@
-Status: [IN_PROGRESS]
+Status: [DONE]
 
 # Top loading indicator between page navigations (global, reusable)
 
@@ -83,3 +83,5 @@ can show/hide with one function call, with no wiring per page.
 
 - 2026-08-15: Task opened. Confirmed approach: sweep bar (oldrare-style).
   Emphasized global, self-contained loader module usable site-wide.
+- 2026-08-17: Marked [DONE] per user confirmation. Acceptance criteria verified
+  by the user.

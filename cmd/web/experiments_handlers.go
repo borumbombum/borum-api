@@ -39,6 +39,7 @@ const (
 // disabled experiments are unlisted.
 func (a *app) experimentHandler(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
+	lang := r.Context().Value("lang").(string)
 	items := experiments.List(r.Context())
 	var item *experiments.Item
 	for i := range items {
@@ -51,6 +52,23 @@ func (a *app) experimentHandler(w http.ResponseWriter, r *http.Request) {
 		a.notFoundHandler(w, r)
 		return
 	}
+	
+	// Load translation if available
+	if lang != "en" {
+		trans, err := experiments.GetTranslation(r.Context(), slug, lang)
+		if err == nil && trans != nil {
+			if trans.Title != "" {
+				item.Experiment.Title = trans.Title
+			}
+			if trans.Description != "" {
+				item.Experiment.Description = trans.Description
+			}
+			if trans.Intro != "" {
+				item.IntroPT = trans.Intro
+			}
+		}
+	}
+	
 	data := struct {
 		pageData
 		Experiment    *experiments.Item
@@ -58,6 +76,7 @@ func (a *app) experimentHandler(w http.ResponseWriter, r *http.Request) {
 		MaxPixelsMP   int
 		MaxEdge       int
 		MaxUploadMB   int
+		Lang          string
 	}{
 		pageData:      a.newPageData(r, "experiments"),
 		Experiment:    item,
@@ -65,6 +84,7 @@ func (a *app) experimentHandler(w http.ResponseWriter, r *http.Request) {
 		MaxPixelsMP:   maxImagePixels / 1_000_000,
 		MaxEdge:       maxImageEdge,
 		MaxUploadMB:   maxUploadBytes >> 20,
+		Lang:          lang,
 	}
 	renderPage(w, http.StatusOK, "experiment_"+slug, data)
 }
