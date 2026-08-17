@@ -65,6 +65,12 @@
 
 - 001 [DONE] Top loading indicator between page navigations
 
+# Documentation
+
+- Detailed docs live in `docs/` — one file per topic.
+- Check `docs/` when you need to understand how a subsystem works.
+- Current topics: translations (i18n), database schema, admin workflows.
+
 # Languages
 
 - Supported languages: `en` (base), `pt`.
