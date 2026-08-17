@@ -15,6 +15,7 @@ import (
 
 	"github.com/borumbombum/borum-api/internal/auth"
 	"github.com/borumbombum/borum-api/internal/battery"
+	"github.com/borumbombum/borum-api/internal/backup"
 	"github.com/borumbombum/borum-api/internal/content"
 	"github.com/borumbombum/borum-api/internal/db"
 	"github.com/borumbombum/borum-api/internal/experiments"
@@ -132,6 +133,29 @@ func main() {
 	// The battery job must be added before Register starts the loop.
 	tasks.Add("battery", time.Minute, battery.Refresh)
 	go battery.Refresh()
+
+	// Daily database backup at 2 AM (24h interval).
+	tasks.Add("backup", 24*time.Hour, func() {
+		log.Println("backup: starting daily backup")
+		if err := backup.Backup(sqlDB); err != nil {
+			log.Printf("backup: failed: %v", err)
+		} else {
+			log.Println("backup: completed successfully")
+		}
+	})
+
+	// Run backup immediately on startup if BACKUP_RUN_ON_STARTUP=1.
+	if backup.RunOnStartup() {
+		go func() {
+			log.Println("backup: running on startup")
+			if err := backup.Backup(sqlDB); err != nil {
+				log.Printf("backup: failed: %v", err)
+			} else {
+				log.Println("backup: completed successfully")
+			}
+		}()
+	}
+
 	if n := tasks.Register(); n == 0 {
 		log.Println("borum-api: warning: scheduler started with 0 jobs")
 	} else {

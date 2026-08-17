@@ -5,3 +5,6 @@
 
 # Local secrets
 /.env
+
+# Database backups
+/backups/
