@@ -94,6 +94,7 @@ This rule overrides everything else. Breaking it loses trust.
 
 - 001 [DONE] Top loading indicator between page navigations
 - 002 [DONE] Perfect the language (i18n) implementation
+- 003 [TODO] CardDAV contact sync (sovereign backup)
 
 # Documentation
 
