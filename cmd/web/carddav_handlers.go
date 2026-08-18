@@ -285,6 +285,120 @@ func (a *app) godCardDAVContactsHandler(w http.ResponseWriter, r *http.Request) 
 	renderGodPage(w, "god_carddav_contacts", data)
 }
 
+// godCardDAVContactDataHandler returns a single contact's parsed vCard as JSON.
+func (a *app) godCardDAVContactDataHandler(w http.ResponseWriter, r *http.Request) {
+	if !a.validCSRF(r) {
+		http.Error(w, "Invalid CSRF token", http.StatusForbidden)
+		return
+	}
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		http.Error(w, "Missing contact ID", http.StatusBadRequest)
+		return
+	}
+	var vcardData string
+	err := a.db.QueryRowContext(r.Context(),
+		`SELECT c.vcard_data FROM contacts c
+		 JOIN address_books ab ON c.address_book_id = ab.id
+		 WHERE c.id = ? AND ab.user_id = 'default'`, id,
+	).Scan(&vcardData)
+	if err != nil {
+		a.errorLogger.Printf("carddav contact data: %v", err)
+		http.Error(w, "Contact not found", http.StatusNotFound)
+		return
+	}
+
+	decoder := vcard.NewDecoder(strings.NewReader(vcardData))
+	card, err := decoder.Decode()
+	if err != nil {
+		a.errorLogger.Printf("carddav contact data decode: %v", err)
+		http.Error(w, "Failed to decode vCard", http.StatusInternalServerError)
+		return
+	}
+
+	type address struct {
+		Street  string `json:"street"`
+		City    string `json:"city"`
+		Region  string `json:"region"`
+		Postal  string `json:"postal"`
+		Country string `json:"country"`
+	}
+
+	result := map[string]any{}
+
+	if fn := card.Get(vcard.FieldFormattedName); fn != nil && fn.Value != "" {
+		result["name"] = fn.Value
+	}
+	if nn := card.Get(vcard.FieldNickname); nn != nil && nn.Value != "" {
+		result["nickname"] = nn.Value
+	}
+	if org := card.Get(vcard.FieldOrganization); org != nil && org.Value != "" {
+		result["organization"] = org.Value
+	}
+	if t := card.Get(vcard.FieldTitle); t != nil && t.Value != "" {
+		result["title"] = t.Value
+	}
+	if role := card.Get(vcard.FieldRole); role != nil && role.Value != "" {
+		result["role"] = role.Value
+	}
+	if bday := card.Get(vcard.FieldBirthday); bday != nil && bday.Value != "" {
+		result["birthday"] = bday.Value
+	}
+	if u := card.Get(vcard.FieldURL); u != nil && u.Value != "" {
+		result["url"] = u.Value
+	}
+	if note := card.Get(vcard.FieldNote); note != nil && note.Value != "" {
+		result["note"] = note.Value
+	}
+	if cat := card.Get(vcard.FieldCategories); cat != nil && cat.Value != "" {
+		result["categories"] = cat.Value
+	}
+	if gender := card.Get(vcard.FieldGender); gender != nil && gender.Value != "" {
+		result["gender"] = gender.Value
+	}
+	if uid := card.Get(vcard.FieldUID); uid != nil && uid.Value != "" {
+		result["uid"] = uid.Value
+	}
+
+	var phones []string
+	for _, tel := range card.Values(vcard.FieldTelephone) {
+		if tel != "" {
+			phones = append(phones, tel)
+		}
+	}
+	if len(phones) > 0 {
+		result["phones"] = phones
+	}
+
+	var emails []string
+	for _, email := range card.Values(vcard.FieldEmail) {
+		if email != "" {
+			emails = append(emails, email)
+		}
+	}
+	if len(emails) > 0 {
+		result["emails"] = emails
+	}
+
+	var addresses []address
+	for _, addr := range card.Values(vcard.FieldAddress) {
+		parts := strings.Split(addr, ";")
+		addresses = append(addresses, address{
+			Street:  strings.TrimSpace(parts[0]),
+			City:    strings.TrimSpace(parts[1]),
+			Region:  strings.TrimSpace(parts[2]),
+			Postal:  strings.TrimSpace(parts[3]),
+			Country: strings.TrimSpace(parts[4]),
+		})
+	}
+	if len(addresses) > 0 {
+		result["addresses"] = addresses
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
+}
+
 // godCardDAVContactDeleteHandler deletes a single contact by ID.
 func (a *app) godCardDAVContactDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")

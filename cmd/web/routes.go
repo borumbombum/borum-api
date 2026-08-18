@@ -58,6 +58,7 @@ func (a *app) apiRoutes() []apiRoute {
 		{http.MethodPost, "/god/carddav/purge", a.requirePage(a.godCardDAVPurgeHandler)},
 		{http.MethodGet, "/god/carddav/stats", a.requirePage(a.godCardDAVStatsHandler)},
 		{http.MethodGet, "/god/carddav/contacts", a.requirePage(a.godCardDAVContactsHandler)},
+		{http.MethodPost, "/god/carddav/contacts/{id}/data", a.requirePage(a.godCardDAVContactDataHandler)},
 		{http.MethodPost, "/god/carddav/contacts/{id}/delete", a.requirePage(a.godCardDAVContactDeleteHandler)},
 		{http.MethodGet, "/god/carddav/contacts/{id}/download", a.requirePage(a.godCardDAVContactDownloadHandler)},
 

@@ -35,23 +35,7 @@
     <div class="separator-line"></div>
 </div>
 
-<!-- Experiments -->
-{{if .Experiments}}
-<section class="archive wrapper wrapper-wide mt-2 relative -top-5" aria-labelledby="experiments-heading">
-    <h2 id="experiments-heading" class="h4 font-italic font-weight-600">Experiments</h2>
-    <ul class="archive-with-dates">
-        {{range .Experiments}}
-        <li>
-            <div>
-                <span class="text-faint">[#{{.Number}}]</span>
-                <a href="/experiments/{{.Slug}}">{{.Title}}</a>
-            </div>
-            <div></div>
-        </li>
-        {{end}}
-    </ul>
-</section>
-{{end}}
+
 
 <!-- Article list -->
 <div id="main" class="archive wrapper wrapper-wide mt-2 relative -top-5">
@@ -68,6 +52,24 @@
         </li>
         {{end}}
     </ul>
+
+    <!-- Experiments -->
+    {{if .Experiments}}
+    <!-- <section class="archive wrapper wrapper-wide mt-2 relative -top-5" aria-labelledby="experiments-heading"> -->
+    <h2 id="experiments-heading" class="h4 font-italic font-weight-600">Experiments</h2>
+    <ul class="archive-with-dates">
+        {{range .Experiments}}
+        <li>
+            <div>
+                <span class="text-faint">[#{{.Number}}]</span>
+                <a href="/experiments/{{.Slug}}">{{.Title}}</a>
+            </div>
+            <div></div>
+        </li>
+        {{end}}
+    </ul>
+    <!-- </section> -->
+    {{end}}
 
     <div class="text-center line-height-2 mt-3">
         <h2 class="h4 font-italic font-weight-600">Tag cloud</h2>
@@ -99,4 +101,6 @@
     </section>
     {{end}}
 </div>
+
+
 {{end}}

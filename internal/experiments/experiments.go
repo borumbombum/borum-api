@@ -39,6 +39,7 @@ type Item struct {
 	Sort    int
 	Number  int
 	Intro   string
+	IntroPT string
 }
 
 // ExperimentTranslation holds translated content for an experiment.
@@ -60,6 +61,12 @@ var all = []Experiment{
 		Title:       "Image → WebP converter",
 		Description: "Upload a PNG or JPEG and download it as WebP.",
 		Dir:         "01-img2webp",
+	},
+	{
+		Slug:        "qr-smuggler-kit",
+		Title:       "QR Smuggler Kit",
+		Description: "Decode and encode QR codes in your browser.",
+		Dir:         "02-qr-smuggler-kit",
 	},
 }
 
@@ -374,6 +381,24 @@ func queryAll(ctx context.Context) ([]Item, error) {
 		return nil, err
 	}
 
+	introPT := map[string]string{}
+	trows, err := store.db.QueryContext(ctx,
+		`SELECT slug, intro FROM experiment_translations WHERE lang = 'pt'`)
+	if err != nil {
+		return nil, err
+	}
+	defer trows.Close()
+	for trows.Next() {
+		var slug, intro string
+		if err := trows.Scan(&slug, &intro); err != nil {
+			return nil, err
+		}
+		introPT[slug] = intro
+	}
+	if err := trows.Err(); err != nil {
+		return nil, err
+	}
+
 	items := make([]Item, 0, len(all))
 	for _, e := range all {
 		s, ok := bySlug[e.Slug]
@@ -385,13 +410,14 @@ func queryAll(ctx context.Context) ([]Item, error) {
 			Enabled:    s.enabled != 0,
 			Sort:       s.sort,
 			Intro:      s.intro,
+			IntroPT:    introPT[e.Slug],
 		})
 	}
 	sort.SliceStable(items, func(i, j int) bool {
 		if items[i].Sort != items[j].Sort {
-			return items[i].Sort < items[j].Sort
+			return items[i].Sort > items[j].Sort
 		}
-		return defaultOrder(items[i].Dir) < defaultOrder(items[j].Dir)
+		return defaultOrder(items[i].Dir) > defaultOrder(items[j].Dir)
 	})
 	for i := range items {
 		items[i].Number = i + 1

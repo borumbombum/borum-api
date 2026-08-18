@@ -10,18 +10,20 @@
     <a href="/god/carddav" class="font-mono text-[12px] hover:opacity-60">← carddav</a>
 </header>
 <main class="!p-5 pt-12">
-    <div class="mb-6 flex items-center justify-between">
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-2">
         <div>
             <h2 class="font-mono text-[13px] font-semibold">Contacts</h2>
             <p id="contact-total" class="font-mono text-[12px] text-faint">{{.Total}} contacts stored</p>
         </div>
-        <div class="flex gap-3">
-            <a href="/god/carddav/download" download class="rounded bg-ink px-3 py-1 font-mono text-[12px] text-paper hover:opacity-80">Download All</a>
-        </div>
+        <a href="/god/carddav/download" download class="shrink-0 rounded bg-ink px-3 py-1 font-mono text-[12px] text-paper hover:opacity-80">Download All</a>
+    </div>
+
+    <div class="!mb-1">
+        <input id="contact-search" type="text" placeholder="Filter by name…" class="w-full max-w-xs rounded border border-hairline bg-transparent px-3 py-1.5 font-mono text-[12px] placeholder:text-faint focus:outline-none">
     </div>
 
     {{if .Contacts}}
-    <div class="rounded border border-hairline">
+    <div class="d-none-mobile rounded border border-hairline table-scroll">
         <table class="w-full font-mono text-[12px]">
             <thead>
                 <tr class="border-b border-hairline text-left text-faint">
@@ -41,8 +43,9 @@
                     <td class="!px-6 !py-3 text-faint">{{.Phone}}</td>
                     <td class="!px-6 !py-3 text-right">
                         <div class="flex items-center justify-end gap-2">
+                            <button type="button" data-view="{{.ID}}" class="cursor-pointer font-mono text-[11px] text-faint hover:text-ink">View</button>
                             <a href="/god/carddav/contacts/{{.ID}}/download" download class="font-mono text-[11px] text-faint hover:text-ink">Download</a>
-                            <button type="button" data-delete="{{.ID}}" class="font-mono text-[11px] text-red-600 hover:text-red-700">Delete</button>
+                            <button type="button" data-delete="{{.ID}}" class="cursor-pointer font-mono text-[11px] text-red-600 hover:text-red-700">Delete</button>
                         </div>
                     </td>
                 </tr>
@@ -50,9 +53,33 @@
             </tbody>
         </table>
     </div>
+
+    <div class="d-none-desktop">
+        {{range .Contacts}}
+        <div data-card-id="{{.ID}}" class="border-b border-hairline !px-5 !py-3 last:border-b-0">
+            <details>
+                <summary class="flex cursor-pointer items-center justify-between font-mono text-[11px] text-faint">
+                    <div class="min-w-0">
+                        <p class="!mt-0 font-mono text-[13px]">{{.Name}}</p>
+                        <p class="!mt-0 font-mono text-[11px] text-faint">{{if .Phone}}{{.Phone}}{{end}}{{if and .Phone .Email}} · {{end}}{{if .Email}}{{.Email}}{{end}}</p>
+                    </div>
+                    <i data-lucide="chevron-down" width="16" height="16" class="shrink-0 text-faint chevron-icon"></i>
+                </summary>
+                <div class="!mt-2 flex gap-3">
+                    <button type="button" data-view="{{.ID}}" class="cursor-pointer font-mono text-[11px] text-faint hover:text-ink">View</button>
+                    <a href="/god/carddav/contacts/{{.ID}}/download" download class="font-mono text-[11px] text-faint hover:text-ink">Download</a>
+                    <button type="button" data-delete="{{.ID}}" class="cursor-pointer font-mono text-[11px] text-red-600 hover:text-red-700">Delete</button>
+                </div>
+            </details>
+        </div>
+        {{end}}
+    </div>
+
     <script>
     (function() {
+        var csrf = '{{.CSRF}}';
         var totalEl = document.getElementById('contact-total');
+
         document.querySelectorAll('[data-delete]').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 var id = btn.getAttribute('data-delete');
@@ -62,6 +89,8 @@
                     .then(function() {
                         var tr = btn.closest('tr');
                         if (tr) tr.remove();
+                        var card = document.querySelector('[data-card-id="' + id + '"]');
+                        if (card) card.remove();
                         if (totalEl) {
                             var rows = document.querySelectorAll('tbody tr');
                             totalEl.textContent = rows.length + ' contacts stored';
@@ -69,6 +98,83 @@
                     });
             });
         });
+
+        document.querySelectorAll('[data-view]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var id = btn.getAttribute('data-view');
+                btn.disabled = true;
+                var fd = new FormData();
+                fd.append('_csrf', csrf);
+                fetch('/god/carddav/contacts/' + id + '/data', { method: 'POST', body: fd })
+                    .then(function(r) { return r.json(); })
+                    .then(function(d) {
+                        var html = '<dl class="grid grid-cols-1 gap-3 sm:grid-cols-2 font-mono text-[12px]">';
+                        var keys = [
+                            ['organization', 'Organization'],
+                            ['title', 'Title'],
+                            ['role', 'Role'],
+                            ['nickname', 'Nickname'],
+                            ['birthday', 'Birthday'],
+                            ['gender', 'Gender'],
+                            ['url', 'URL'],
+                            ['note', 'Note'],
+                            ['categories', 'Categories'],
+                            ['uid', 'UID']
+                        ];
+                        keys.forEach(function(pair) {
+                            if (d[pair[0]]) {
+                                html += '<div><dt class="text-faint text-[11px]">' + pair[1] + '</dt><dd>' + d[pair[0]] + '</dd></div>';
+                            }
+                        });
+                        html += '</dl>';
+                        if (d.phones && d.phones.length) {
+                            html += '<div class="!mt-3"><p class="font-mono text-[11px] text-faint">Phones</p>';
+                            d.phones.forEach(function(p) { html += '<p class="!mt-0 font-mono text-[12px]">' + p + '</p>'; });
+                            html += '</div>';
+                        }
+                        if (d.emails && d.emails.length) {
+                            html += '<div class="!mt-3"><p class="font-mono text-[11px] text-faint">Emails</p>';
+                            d.emails.forEach(function(e) { html += '<p class="!mt-0 font-mono text-[12px]">' + e + '</p>'; });
+                            html += '</div>';
+                        }
+                        if (d.addresses && d.addresses.length) {
+                            html += '<div class="!mt-3"><p class="font-mono text-[11px] text-faint">Addresses</p>';
+                            d.addresses.forEach(function(a) {
+                                html += '<div class="!mt-0 rounded bg-soft p-2 font-mono text-[12px]">';
+                                if (a.street) html += '<p class="!mt-0">' + a.street + '</p>';
+                                var line = [];
+                                if (a.city) line.push(a.city);
+                                if (a.region) line.push(a.region);
+                                if (a.postal) line.push(a.postal);
+                                if (line.length) html += '<p class="!mt-0">' + line.join(', ') + '</p>';
+                                if (a.country) html += '<p class="!mt-0 text-faint">' + a.country + '</p>';
+                                html += '</div>';
+                            });
+                            html += '</div>';
+                        }
+                        html += '<div class="!mt-4 flex gap-3">';
+                        html += '<a href="/god/carddav/contacts/' + id + '/download" download class="rounded border border-hairline px-2 py-0.5 font-mono text-[11px] text-faint hover:text-ink">Download VCF</a>';
+                        html += '</div>';
+                        openModal({ title: d.name || 'Contact', body: html });
+                        btn.disabled = false;
+                    });
+            });
+        });
+
+        var search = document.getElementById('contact-search');
+        if (search) {
+            search.addEventListener('input', function() {
+                var q = search.value.toLowerCase();
+                document.querySelectorAll('tbody tr').forEach(function(tr) {
+                    var name = (tr.children[1] ? tr.children[1].textContent : '').toLowerCase();
+                    tr.style.display = name.indexOf(q) === -1 ? 'none' : '';
+                });
+                document.querySelectorAll('[data-card-id]').forEach(function(card) {
+                    var name = (card.querySelector('p') ? card.querySelector('p').textContent : '').toLowerCase();
+                    card.style.display = name.indexOf(q) === -1 ? 'none' : '';
+                });
+            });
+        }
     })();
     </script>
     {{else}}

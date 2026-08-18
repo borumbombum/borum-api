@@ -102,6 +102,8 @@ This rule overrides everything else. Breaking it loses trust.
 - 002 [DONE] Perfect the language (i18n) implementation
 - 003 [IN_PROGRESS] CardDAV contact sync (sovereign backup)
 - 004 [DONE] VCF contact backup
+- 005 [TODO] RSS feed
+- 006 [TODO] Migrate legacy CSS to Tailwind inline classes
 
 # Bugs
 
